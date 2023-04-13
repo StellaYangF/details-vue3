@@ -1,3 +1,4 @@
 import { isObject } from "@vue/shared";
-
-console.log(isObject('hello'))
+export {
+  isObject
+}

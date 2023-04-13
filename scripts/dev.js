@@ -1,20 +1,18 @@
 // @ts-check
 
-import { build } from "esbuild"
-import { resolve } from 'node:path'
+const esbuild = require('esbuild')
+const { resolve } = require('path')
 
 const target = 'reactivity'
 
-build({
-    entryPoints: [resolve(__dirname, `../packages/${target}/src/index.ts`)],
-    outfile: resolve(__dirname, `../packages/${target}/dist/index.js`),
-    format: "esm",
-    sourcemap: true,
-    bundle: true, // bundle depended files
-    platform: 'browser',
-    watch: {
-        onRebuld() {
-            console.log('rebuild~~~')
-        }
-    }
-}).then(() => console.log('watching~~~'))
+esbuild.context({
+	entryPoints: [resolve(__dirname, `../packages/${target}/src/index.ts`)],
+	outfile: resolve(__dirname, `../packages/${target}/dist/index.js`),
+	bundle: true, // bundle depended files
+	sourcemap: true,
+	format: "esm",
+	platform: 'browser'
+}).then(ctx => {
+	console.log('~~~watching~~~', ctx)
+	ctx.watch()
+})

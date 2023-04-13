@@ -72,3 +72,7 @@ pnpm tsc --init
 
 2. 上述步骤，再次运行，新问题出现：
  ![nodeBuildReferenceError](./assets/nodeBuildReferenceError.jpg)
+
+解决： __dirname 属于 node 变量，在module中存在。根据源码，可引用 dirname 方法。
+ ![dirname](./assets/dirname.jpg)
+
