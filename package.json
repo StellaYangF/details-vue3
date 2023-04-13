@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node scripts/dev.js"
   },
   "keywords": [],
   "author": "",
@@ -20,5 +21,8 @@
     "rollup": "^3.20.2",
     "rollup-plugin-typescript2": "^0.34.1",
     "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "vue": "^3.2.47"
   }
 }

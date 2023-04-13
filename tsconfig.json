@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "outDir": "dist",
     "sourceMap": true,
     "target": "ES2016",
@@ -16,6 +15,17 @@
     "lib": [
       "ESNext",
       "DOM"
-    ]
+    ],
+    "types": [
+      "vitest/globals",
+      "puppeteer",
+      "node"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@vue/*": [
+        "packages/*/src"
+      ]
+    }
   }
 }
