@@ -20,64 +20,11 @@ export function reactive(target: object) {
 
   // 3. 代理后对象
   if (target[ReactiveFlags.IS_REACTIVE]) {
-    return
+    return target
 
   }
   const proxy = new Proxy(target, mutableHandlers)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   reactiveMap.set(target, proxy)
   return proxy
-}
-
-function createReactiveObject() {
-
 }
