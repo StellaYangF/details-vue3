@@ -5,9 +5,13 @@ function isObject(val) {
 
 // packages/reactivity/src/effect.ts
 var activeEffect = null;
+var targetMap = /* @__PURE__ */ new WeakMap();
 var ReactiveEffect = class {
   constructor(fn) {
     this.fn = fn;
+    this.active = true;
+    // 记录 effect 中使用的属性
+    this.deps = [];
   }
   run() {
     try {
@@ -16,6 +20,7 @@ var ReactiveEffect = class {
       this.fn();
     } finally {
       activeEffect = this.parent;
+      this.parent = void 0;
     }
   }
   stop() {
@@ -25,6 +30,25 @@ function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run();
 }
+function track(target, type, key) {
+  if (activeEffect) {
+    let depsMap = targetMap.get(target);
+    if (!depsMap) {
+      targetMap.set(target, depsMap = /* @__PURE__ */ new Map());
+    }
+    let dep = depsMap.get(key);
+    if (!dep) {
+      depsMap.set(key, dep = /* @__PURE__ */ new Set());
+    }
+    let shouldTrack = !dep.has(activeEffect);
+    if (shouldTrack) {
+      dep.add(activeEffect);
+      activeEffect.deps.push(dep);
+    }
+  }
+}
+function trigger() {
+}
 
 // packages/reactivity/src/baseHandlers.ts
 var mutableHandlers = {
@@ -32,7 +56,7 @@ var mutableHandlers = {
     if (key === "__v_isReactive" /* IS_REACTIVE */) {
       return true;
     }
-    console.log(activeEffect, key);
+    track(target, "get", key);
     return Reflect.get(target, key, receiver);
   },
   set(target, key, value, receiver) {
@@ -64,6 +88,8 @@ export {
   ReactiveFlags,
   activeEffect,
   effect,
-  reactive
+  reactive,
+  track,
+  trigger
 };
 //# sourceMappingURL=index.js.map

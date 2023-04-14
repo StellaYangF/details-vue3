@@ -128,7 +128,7 @@ console.log(p.total)
   }
 ```
 
-### 响应式收集
+### effect 函数执行
 
 1. 如何关联正在执行的 effect 和响应式数据的取值
   - `effect.ts` 暴露出变量 `activeEffect`
@@ -143,6 +143,15 @@ console.log(p.total)
   - vue3 则运用树结构，标记关系即可。
   ![nestedEffectParent](./assets/nestedEffectParent.jpg)
 
+### 依赖收集
+默认执行 effect 时会对属性，进行依赖收集
+
+- effect 函数内取值，才会 
+- `activeEffect.deps` 将属性和对应的 `effect` 维护成映射关系，后续属性变化可以触发对应的 `effect` 函数重新 `run`
+![track](./assets/track.jpg)
+
+### 触发更新
+取值时已收集过依赖，更新操作即触发 effect 重新执行
 
 ## Error Records
 
@@ -152,7 +161,6 @@ console.log(p.total)
 
 2. 上述步骤，再次运行，新问题出现：
  ![nodeBuildReferenceError](./assets/nodeBuildReferenceError.jpg)
-
 解决： `__dirname` 属于 `node` 变量，在 `module` 中存在。根据源码，可引用 `dirname` 方法。
  ![dirname](./assets/dirname.jpg)
 
