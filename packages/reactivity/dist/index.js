@@ -3,12 +3,35 @@ function isObject(val) {
   return val !== null && typeof val === "object";
 }
 
+// packages/reactivity/src/effect.ts
+var activeEffect = null;
+var ReactiveEffect = class {
+  constructor(fn) {
+    this.fn = fn;
+  }
+  run() {
+    try {
+      activeEffect = this;
+      this.fn();
+    } finally {
+      activeEffect = null;
+    }
+  }
+  stop() {
+  }
+};
+function effect(fn) {
+  const _effect = new ReactiveEffect(fn);
+  _effect.run();
+}
+
 // packages/reactivity/src/baseHandlers.ts
 var mutableHandlers = {
   get(target, key, receiver) {
     if (key === "__v_isReactive" /* IS_REACTIVE */) {
       return true;
     }
+    console.log(activeEffect);
     return Reflect.get(target, key, receiver);
   },
   set(target, key, value, receiver) {
@@ -36,12 +59,9 @@ function reactive(target) {
   reactiveMap.set(target, proxy);
   return proxy;
 }
-
-// packages/reactivity/src/effect.ts
-function effect(fn) {
-}
 export {
   ReactiveFlags,
+  activeEffect,
   effect,
   reactive
 };

@@ -128,6 +128,17 @@ console.log(p.total)
   }
 ```
 
+### 响应式收集
+
+1. 如何关联正在执行的 effect 和响应式数据的取值
+  - `effect.ts` 暴露出变量 `activeEffect`
+  - `get` 取值操作时，通过变量 `activeEffect` 就建立起连接 `{target -> key -> dep}`
+  - **每执行完一个 effect(fn)，就要清空当前的 activeEffect；而执行前，把 reactiveEffect 实例复制给 activeEffect**，这样才能保证fn执行时，内部用到的响应式数据，可以建立连接
+  ![activeEffect](./assets/activeEffect.jpg)
+
+2. 每调用一次 effect，就会重新 new 一个 `ReactiveEffect`
+
+
 ## Error Records
 
 1. `dev` 环境下的打包，基于 `esbuild` 快捷高效，便于 `tree-shaking`。打包时，dev.js 文件，引入包名时有两种方式`import or require`。如果使用 `node require` 方式，打包编译时会报如下错误：

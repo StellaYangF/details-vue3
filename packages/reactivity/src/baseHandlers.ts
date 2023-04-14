@@ -1,3 +1,4 @@
+import { activeEffect } from "./effect"
 import { ReactiveFlags } from "./reactive"
 
 export const mutableHandlers = {
@@ -5,6 +6,7 @@ export const mutableHandlers = {
     if (key === ReactiveFlags.IS_REACTIVE) {
       return true
     }
+    console.log(activeEffect)
     // 取值关联 key 和 effect
     return Reflect.get(target, key, receiver)
   },
