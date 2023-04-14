@@ -11,10 +11,11 @@ var ReactiveEffect = class {
   }
   run() {
     try {
+      this.parent = activeEffect;
       activeEffect = this;
       this.fn();
     } finally {
-      activeEffect = null;
+      activeEffect = this.parent;
     }
   }
   stop() {
@@ -31,7 +32,7 @@ var mutableHandlers = {
     if (key === "__v_isReactive" /* IS_REACTIVE */) {
       return true;
     }
-    console.log(activeEffect);
+    console.log(activeEffect, key);
     return Reflect.get(target, key, receiver);
   },
   set(target, key, value, receiver) {

@@ -137,6 +137,11 @@ console.log(p.total)
   ![activeEffect](./assets/activeEffect.jpg)
 
 2. 每调用一次 effect，就会重新 new 一个 `ReactiveEffect`
+  - 嵌套 effect 需要考虑在内
+  ![nestedEffect](./assets/nestedEffect.jpg)
+  - 解决方案 2.x 基于栈来处理（进出栈），需要额外维护。
+  - vue3 则运用树结构，标记关系即可。
+  ![nestedEffectParent](./assets/nestedEffectParent.jpg)
 
 
 ## Error Records

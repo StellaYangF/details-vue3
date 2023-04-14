@@ -6,7 +6,7 @@ export const mutableHandlers = {
     if (key === ReactiveFlags.IS_REACTIVE) {
       return true
     }
-    console.log(activeEffect)
+    console.log(activeEffect, key)
     // 取值关联 key 和 effect
     return Reflect.get(target, key, receiver)
   },

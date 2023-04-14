@@ -1,14 +1,16 @@
 export let activeEffect = null
 
 class ReactiveEffect {
+  private parent
   constructor(private fn) { }
 
   run() {
     try {
+      this.parent = activeEffect
       activeEffect = this
       this.fn()
     } finally {
-      activeEffect = null
+      activeEffect = this.parent
     }
   }
 
