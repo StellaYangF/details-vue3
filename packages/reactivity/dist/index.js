@@ -47,7 +47,17 @@ function track(target, type, key) {
     }
   }
 }
-function trigger() {
+function trigger(target, type, key, value, oldValue) {
+  const depsMap = targetMap.get(target);
+  if (!depsMap) {
+    return;
+  }
+  const effects = depsMap.get(key);
+  effects && effects.forEach((effect2) => {
+    if (effect2 !== activeEffect) {
+      effect2.run();
+    }
+  });
 }
 
 // packages/reactivity/src/baseHandlers.ts
@@ -60,7 +70,12 @@ var mutableHandlers = {
     return Reflect.get(target, key, receiver);
   },
   set(target, key, value, receiver) {
-    return Reflect.set(target, key, value, receiver);
+    const result = Reflect.set(target, key, value, receiver);
+    const oldValue = target[key];
+    if (oldValue !== value) {
+      trigger(target, "set", key, value, oldValue);
+    }
+    return result;
   }
 };
 

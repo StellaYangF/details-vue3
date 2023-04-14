@@ -51,4 +51,16 @@ export function track(target, type, key) {
   }
 }
 
-export function trigger() { }
+export function trigger(target, type, key, value, oldValue) {
+  const depsMap = targetMap.get(target)
+  if (!depsMap) {
+    return
+  }
+
+  const effects = depsMap.get(key)
+  effects && effects.forEach(effect => {
+    if (effect !== activeEffect) {
+      effect.run()
+    }
+  });
+}

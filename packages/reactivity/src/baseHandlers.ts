@@ -1,4 +1,4 @@
-import { activeEffect, track } from "./effect"
+import { activeEffect, track, trigger } from "./effect"
 import { ReactiveFlags } from "./reactive"
 
 export const mutableHandlers = {
@@ -7,13 +7,19 @@ export const mutableHandlers = {
       return true
     }
 
-    // 取值关联 key 和 effect
+    // 取值关联 target, key 和 effect
     track(target, 'get', key)
 
     return Reflect.get(target, key, receiver)
   },
   set(target, key, value, receiver) {
+    const result = Reflect.set(target, key, value, receiver)
+
     // 更新执行 key 关联 effect
-    return Reflect.set(target, key, value, receiver)
+    const oldValue = target[key]
+    if (oldValue !== value) {
+      trigger(target, 'set', key, value, oldValue)
+    }
+    return result
   },
 }
