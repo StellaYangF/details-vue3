@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>proxy state</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { reactive, effect } from './index.js'
+    
+    // reactive 代理对象，特殊情况处理
+    const obj = { name: 'Stella' }
+
+    const p1 = reactive(obj)
+    const p2 = reactive(obj)
+    const p3= reactive(p2)
+    console.log('p1 === p2', p1 === p2)
+    console.log('p1 === p3', p1 === p3)
+
+    effect(() => {
+      app.innerHTML =  p1.name
+    })
+
+    setTimeout(() => p1.name = 'yang', 1000)
+
+  </script>
+</body>
+</html>

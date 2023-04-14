@@ -1,18 +1,83 @@
 import { isObject } from "@vue/shared";
+import { mutableHandlers } from "./baseHandlers";
 
-export function reactive(value: object) {
-  if (!isObject(value)) return value
+export const enum ReactiveFlags {
+  IS_REACTIVE = '__v_isReactive'
+}
+const reactiveMap = new WeakMap()
 
-  const proxy = new Proxy(value, {
-    get(target, key, receive) {
-      console.log('get collect', key)
-      return Reflect.get(target, key, receive)
-    },
-    set(target, key, value, receive) {
-      console.log('set', key, value)
-      return Reflect.set(target, key, value, receive)
-    }
-  })
+export function reactive<T extends object>(target: T)
+export function reactive(target: object) {
+  // target 值不同，处理方式如下：
+  // 1. 非对象不代理
+  if (!isObject(target)) return target
 
+  // 2. 重复代理
+  let existingProxy = reactiveMap.get(target)
+  if (existingProxy) {
+    return existingProxy
+  }
+
+  // 3. 代理后对象
+  if (target[ReactiveFlags.IS_REACTIVE]) {
+    return
+
+  }
+  const proxy = new Proxy(target, mutableHandlers)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  reactiveMap.set(target, proxy)
   return proxy
+}
+
+function createReactiveObject() {
+
 }

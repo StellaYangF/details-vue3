@@ -65,6 +65,7 @@ pnpm tsc --init
 
 ## Reactive Package
 
+### 数据代理
 `vue3` 是基于 `Proxy` 实现，而 `vue2` 是基于 `Object.defineProperty``。注意，Proxy` 搭配 `Reflect` 实现，用以解决 `this` 调用时指向问题。
 
 ```js
@@ -103,6 +104,28 @@ console.log(p.total)
  * Get teachers ----
  * 300
  */
+```
+
+### 特殊数据代理处理
+
+分三种情况：非对象，重复代理，被代理过的对象
+
+```js
+  // target 值不同，处理方式如下：
+  // 1. 非对象不代理
+  if (!isObject(target)) return target
+
+  // 2. 重复代理
+  let existingProxy = reactiveMap.get(target)
+  if (existingProxy) {
+    return existingProxy
+  }
+
+  // 3. 代理后对象
+  // 只有被代理的对象
+  if (target[ReactiveFlags.IS_REACTIVE]) {
+    return target
+  }
 ```
 
 ## Error Records
