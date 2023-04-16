@@ -13,6 +13,7 @@ class ReactiveEffect {
     try {
       this.parent = activeEffect
       activeEffect = this
+      cleanupEffect(this)
       this.fn()
     } finally {
       activeEffect = this.parent
@@ -46,6 +47,8 @@ export function track(target, type, key) {
     let shouldTrack = !dep.has(activeEffect)
     if (shouldTrack) {
       dep.add(activeEffect)
+      // name & address 对应的 dep 是两个不同的 set
+      // name => [dep]   address => [dep]
       activeEffect.deps.push(dep)
     }
   }
@@ -63,4 +66,14 @@ export function trigger(target, type, key, value, oldValue) {
       effect.run()
     }
   });
+}
+
+function cleanupEffect(effect) {
+  const { deps } = effect
+
+  for (let i = 0; i < deps.length; i++) {
+    console.log(i, deps[i])
+    deps[i].delete(effect)
+  }
+  effect.deps.length = 0
 }

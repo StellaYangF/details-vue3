@@ -137,7 +137,7 @@ console.log(p.total)
   ![activeEffect](./assets/activeEffect.jpg)
 
 2. 每调用一次 effect，就会重新 new 一个 `ReactiveEffect`
-  - 嵌套 effect 需要考虑在内
+  - 嵌套 effect 需要考虑在内。
   ![nestedEffect](./assets/nestedEffect.jpg)
   - 解决方案 2.x 基于栈来处理（进出栈），需要额外维护。
   - vue3 则运用树结构，标记关系即可。
@@ -152,6 +152,36 @@ console.log(p.total)
 
 ### 触发更新
 取值时已收集过依赖，更新操作即触发 effect 重新执行
+![trigger](./assets/trigger.jpg)
+
+### 清除 effect 产生的副作用
+
+flag 动态收集依赖（如下），就需要清除依赖
+```js
+import { reactive, effect } from './index.js'
+    
+const state = reactive({ flag: true, name: 'Stella', age: 18, address: 'Wuhan' })
+effect(() => {
+  console.log('effect exec')
+
+  // 1. flag 为true，取值逻辑只有 name 没有 age，effect 只与 name 建立 connection
+  app.innerHTML =  state.flag
+    ? 'Name: ' + state.name
+    : 'Age: ' + state.age
+})
+
+setTimeout(() => {
+  // 此处 flag 设置为 false，触发 effect，取值只会取 age，前面 name 取值收集的依赖应该清除
+  state.flag = false
+  
+  setTimeout(() => {
+    console.log('修改 name，不应触发 effect 函数执行')
+    state.name ='Yang'
+  }, 1000)
+}, 1000)
+
+```
+
 
 ## Error Records
 

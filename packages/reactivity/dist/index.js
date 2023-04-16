@@ -17,6 +17,7 @@ var ReactiveEffect = class {
     try {
       this.parent = activeEffect;
       activeEffect = this;
+      cleanupEffect(this);
       this.fn();
     } finally {
       activeEffect = this.parent;
@@ -59,6 +60,14 @@ function trigger(target, type, key, value, oldValue) {
     }
   });
 }
+function cleanupEffect(effect2) {
+  const { deps } = effect2;
+  for (let i = 0; i < deps.length; i++) {
+    console.log(i, deps[i]);
+    deps[i].delete(effect2);
+  }
+  effect2.deps.length = 0;
+}
 
 // packages/reactivity/src/baseHandlers.ts
 var mutableHandlers = {
@@ -70,8 +79,8 @@ var mutableHandlers = {
     return Reflect.get(target, key, receiver);
   },
   set(target, key, value, receiver) {
-    const result = Reflect.set(target, key, value, receiver);
     const oldValue = target[key];
+    const result = Reflect.set(target, key, value, receiver);
     if (oldValue !== value) {
       trigger(target, "set", key, value, oldValue);
     }
