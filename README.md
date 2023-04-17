@@ -273,7 +273,18 @@ export function trigger(target, type, key, value, oldValue) {
 effect 方法，内部传入 scheduler 方法，可以在数据变化时，自行操作 run
 
 ```js
-
+// effect.ts function trigger() {}
+ effects && effects.forEach(effect => {
+    // 防止再次执行的 effect
+    if (effect !== activeEffect) {
+      // 执行用户传入 scheduler
+      if (effect.scheduler) {
+        effect.scheduler()
+      } else {
+        effect.run()
+      }
+    }
+  });
 ```
 
 ## Key Points
