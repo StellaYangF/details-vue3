@@ -15,6 +15,9 @@ var ReactiveEffect = class {
   }
   run() {
     try {
+      if (!this.active) {
+        return this.fn();
+      }
       this.parent = activeEffect;
       activeEffect = this;
       cleanupEffect(this);
@@ -25,11 +28,18 @@ var ReactiveEffect = class {
     }
   }
   stop() {
+    if (this.active) {
+      this.active = false;
+      cleanupEffect(this);
+    }
   }
 };
 function effect(fn) {
   const _effect = new ReactiveEffect(fn);
   _effect.run();
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
 }
 function track(target, type, key) {
   if (activeEffect) {

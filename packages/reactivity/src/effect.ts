@@ -11,6 +11,11 @@ class ReactiveEffect {
 
   run() {
     try {
+      // 手动stop后，用户调用runner时，只会重新执行
+      // 不会收集依赖
+      if (!this.active) {
+        return this.fn()
+      }
       this.parent = activeEffect
       activeEffect = this
       // 清理收集的 effect
@@ -22,13 +27,28 @@ class ReactiveEffect {
     }
   }
 
-  stop() { }
+  stop() {
+    if (this.active) {
+      // 失活，手动runner时，不走依赖收集
+      this.active = false
+      // 清除依赖
+      cleanupEffect(this)
+    }
+  }
 }
 
 
 export function effect(fn) {
   const _effect = new ReactiveEffect(fn)
+
+
   _effect.run()
+  /**
+   * 返回 run 方法，并将 effect 实例暴露出去
+   */
+  const runner = _effect.run.bind(_effect)
+  runner.effect = _effect
+  return runner
 }
 
 export function track(target, type, key) {

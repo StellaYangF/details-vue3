@@ -241,7 +241,38 @@ export function trigger(target, type, key, value, oldValue) {
 }
 ```
 
+### Stop Effect
+默认响应式数据，是自动更新的。而某些场景，是需要用户手动更新 effect，即 forceUpdate
 
+1. `effect` 调用后，会返回一个对象 `runner` ，挂在了 `effect` 实例对象
+2. `runner` 就是 `run` 方法
+3. 调用 `stop` 后，再次修改 `state` 不会触发更新
+4. 停止 effect 之后，需要清理收集的依赖，并将 ReactiveEffet.active 变为失活状态
+5. 调用 runner 方法，判断 active 是否失活，不走依赖收集，直接调用 fn
+
+用法
+```js
+    const state = reactive({  name: 'Stella' })
+    
+    const runner = effect(() => {
+      app.innerHTML = state.name
+    })
+
+    runner()
+    
+    // 清理依赖
+    runner.effect.stop()
+
+    // 失活后，任然可以调用，手动更新
+    state.name = 'yang'
+    runner() 
+
+```
+
+
+## Key Points
+
+1. 每个组件就是一个 effect
 ## Error Records
 
 1. `dev` 环境下的打包，基于 `esbuild` 快捷高效，便于 `tree-shaking`。打包时，dev.js 文件，引入包名时有两种方式`import or require`。如果使用 `node require` 方式，打包编译时会报如下错误：

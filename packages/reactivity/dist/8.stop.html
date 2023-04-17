@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stop Effect</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { reactive, effect } from "../../../../node_modules/@vue/reactivity/dist/reactivity.esm-browser.js"
+
+    import { reactive, effect } from './index.js'
+    
+    const state = reactive({ flag: true, name: 'Stella', age: 18, address: 'Wuhan' })
+    
+    const runner = effect(() => {
+      app.innerHTML = state.name
+    })
+
+    runner.effect.stop()
+
+    // 手动更新
+    state.name = 'yang'
+    runner()
+  </script>
+</body>
+</html>
