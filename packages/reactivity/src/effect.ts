@@ -7,7 +7,7 @@ class ReactiveEffect {
   active = true
   // 记录 effect 中使用的属性
   deps = []
-  constructor(private fn) { }
+  constructor(private fn, public scheduler) { }
 
   run() {
     try {
@@ -38,8 +38,8 @@ class ReactiveEffect {
 }
 
 
-export function effect(fn) {
-  const _effect = new ReactiveEffect(fn)
+export function effect(fn, options: any = {}) {
+  const _effect = new ReactiveEffect(fn, options.scheduler)
 
 
   _effect.run()
@@ -92,8 +92,13 @@ export function trigger(target, type, key, value, oldValue) {
 
   const effects = [...deps]
   effects && effects.forEach(effect => {
+    // 防止再次执行的 effect
     if (effect !== activeEffect) {
-      effect.run()
+      if (effect.scheduler) {
+        effect.scheduler()
+      } else {
+        effect.run()
+      }
     }
   });
 

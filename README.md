@@ -269,6 +269,12 @@ export function trigger(target, type, key, value, oldValue) {
 
 ```
 
+### 调度执行 scheduler
+effect 方法，内部传入 scheduler 方法，可以在数据变化时，自行操作 run
+
+```js
+
+```
 
 ## Key Points
 

@@ -7,8 +7,9 @@ function isObject(val) {
 var activeEffect = null;
 var targetMap = /* @__PURE__ */ new WeakMap();
 var ReactiveEffect = class {
-  constructor(fn) {
+  constructor(fn, scheduler) {
     this.fn = fn;
+    this.scheduler = scheduler;
     this.active = true;
     // 记录 effect 中使用的属性
     this.deps = [];
@@ -34,8 +35,8 @@ var ReactiveEffect = class {
     }
   }
 };
-function effect(fn) {
-  const _effect = new ReactiveEffect(fn);
+function effect(fn, options = {}) {
+  const _effect = new ReactiveEffect(fn, options.scheduler);
   _effect.run();
   const runner = _effect.run.bind(_effect);
   runner.effect = _effect;
@@ -67,7 +68,11 @@ function trigger(target, type, key, value, oldValue) {
   const effects = [...deps];
   effects && effects.forEach((effect2) => {
     if (effect2 !== activeEffect) {
-      effect2.run();
+      if (effect2.scheduler) {
+        effect2.scheduler();
+      } else {
+        effect2.run();
+      }
     }
   });
 }
