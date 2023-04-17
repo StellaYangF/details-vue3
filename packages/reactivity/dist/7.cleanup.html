@@ -27,11 +27,10 @@
     setTimeout(() => {
       // 此处 flag 设置为 false，触发 effect，取值只会取 age，前面 name 取值收集的依赖应该清除
       state.flag = false
-      state.age = 1000
-      
+
       setTimeout(() => {
 
-        console.log('修改 name，不应触发 effect 函数执行')
+        // 修改 name，不应触发 effect 函数执行
         state.name ='Yang'
       }, 1000)
     }, 1000)

@@ -12,14 +12,17 @@ export const mutableHandlers = {
 
     return Reflect.get(target, key, receiver)
   },
+
   set(target, key, value, receiver) {
 
     // 更新执行 key 关联 effect
     const oldValue = target[key]
     const result = Reflect.set(target, key, value, receiver)
+
     if (oldValue !== value) {
       trigger(target, 'set', key, value, oldValue)
     }
+
     return result
   },
 }

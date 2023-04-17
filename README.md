@@ -175,11 +175,70 @@ setTimeout(() => {
   state.flag = false
   
   setTimeout(() => {
-    console.log('修改 name，不应触发 effect 函数执行')
+    // 修改 name，不应触发 effect 函数执行
     state.name ='Yang'
   }, 1000)
 }, 1000)
 
+```
+
+更新操作时，会触发收集的 effect 执行，执行前应将此前收集的（取消绑定的）effect 清除掉
+```js
+class ReactiveEffect {
+  private parent
+  active = true
+  // 记录 effect 中使用的属性
+  deps = []
+  constructor(private fn) { }
+
+  run() {
+    try {
+      this.parent = activeEffect
+      activeEffect = this
+      // 清理收集的 effect +
+      cleanupEffect(this)
+      this.fn()
+    } finally {
+      activeEffect = this.parent
+      this.parent = undefined
+    }
+  }
+
+  stop() { }
+}
+
+function cleanupEffect(effect) {
+  const { deps } = effect
+
+  for (let i = 0; i < deps.length; i++) {
+    deps[i].delete(effect)
+  }
+  effect.deps.length = 0
+}
+
+export function trigger(target, type, key, value, oldValue) {
+  const depsMap = targetMap.get(target)
+  if (!depsMap) {
+    return
+  }
+
+  const deps = depsMap.get(key) || new Set()
+  /** +++++++
+   * 直接操作 effects 会导致死循环
+   * 解决：应改为副本，再迭代操作
+   * 
+   * { name: Set[e1, e2] }
+   * { age: Set[e2, e3] }
+   */
+
+  const effects = [...deps]
+  effects && effects.forEach(effect => {
+    if (effect !== activeEffect) {
+      effect.run()
+    }
+  });
+
+}
 ```
 
 

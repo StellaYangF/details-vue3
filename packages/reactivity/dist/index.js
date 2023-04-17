@@ -53,7 +53,8 @@ function trigger(target, type, key, value, oldValue) {
   if (!depsMap) {
     return;
   }
-  const effects = depsMap.get(key);
+  const deps = depsMap.get(key) || /* @__PURE__ */ new Set();
+  const effects = [...deps];
   effects && effects.forEach((effect2) => {
     if (effect2 !== activeEffect) {
       effect2.run();
@@ -63,7 +64,6 @@ function trigger(target, type, key, value, oldValue) {
 function cleanupEffect(effect2) {
   const { deps } = effect2;
   for (let i = 0; i < deps.length; i++) {
-    console.log(i, deps[i]);
     deps[i].delete(effect2);
   }
   effect2.deps.length = 0;

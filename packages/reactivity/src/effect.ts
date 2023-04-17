@@ -13,6 +13,7 @@ class ReactiveEffect {
     try {
       this.parent = activeEffect
       activeEffect = this
+      // 清理收集的 effect
       cleanupEffect(this)
       this.fn()
     } finally {
@@ -60,19 +61,28 @@ export function trigger(target, type, key, value, oldValue) {
     return
   }
 
-  const effects = depsMap.get(key)
+  const deps = depsMap.get(key) || new Set()
+  /**
+   * 直接操作 effects 会导致死循环
+   * 解决：应改为副本，再迭代操作
+   * 
+   * { name: Set[e1, e2] }
+   * { age: Set[e2, e3] }
+   */
+
+  const effects = [...deps]
   effects && effects.forEach(effect => {
     if (effect !== activeEffect) {
       effect.run()
     }
   });
+
 }
 
 function cleanupEffect(effect) {
   const { deps } = effect
 
   for (let i = 0; i < deps.length; i++) {
-    console.log(i, deps[i])
     deps[i].delete(effect)
   }
   effect.deps.length = 0
