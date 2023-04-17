@@ -270,7 +270,8 @@ export function trigger(target, type, key, value, oldValue) {
 ```
 
 ### 调度执行 scheduler
-effect 方法，内部传入 scheduler 方法，可以在数据变化时，自行操作 run
+`effect` 方法，内部传入 `scheduler` 方法，可以在数据变化时，自行操作 `run`
+`trigger` 触发时，我们可以自己决定副作用函数执行的时机、次数、及执行方式
 
 ```js
 // effect.ts function trigger() {}
@@ -285,6 +286,29 @@ effect 方法，内部传入 scheduler 方法，可以在数据变化时，自�
       }
     }
   });
+```
+
+### 深度代理
+
+state 属性对应的对象，也需要深度代理
+```js
+// baseHandlers.ts function mutableHandlers() {}
+  get(target, key, receiver) {
+    if (key === ReactiveFlags.IS_REACTIVE) {
+      return true
+    }
+
+    // 深度代理
+    const res = Reflect.get(target, key, receiver)
+    if (isObject(res)) {
+      return reactive(res)
+    }
+
+    // 取值关联 target, key 和 effect
+    track(target, 'get', key)
+
+    return res
+  },
 ```
 
 ## Key Points

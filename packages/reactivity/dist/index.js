@@ -90,8 +90,12 @@ var mutableHandlers = {
     if (key === "__v_isReactive" /* IS_REACTIVE */) {
       return true;
     }
+    const res = Reflect.get(target, key, receiver);
+    if (isObject(res)) {
+      return reactive(res);
+    }
     track(target, "get", key);
-    return Reflect.get(target, key, receiver);
+    return res;
   },
   set(target, key, value, receiver) {
     const oldValue = target[key];
