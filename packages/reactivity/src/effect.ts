@@ -2,7 +2,7 @@ export let activeEffect = null
 
 // 记录依赖关系 {target -> key -> dep}
 const targetMap = new WeakMap()
-class ReactiveEffect {
+export class ReactiveEffect {
   private parent
   active = true
   // 记录 effect 中使用的属性
@@ -20,7 +20,7 @@ class ReactiveEffect {
       activeEffect = this
       // 清理收集的 effect
       cleanupEffect(this)
-      this.fn()
+      return this.fn()
     } finally {
       activeEffect = this.parent
       this.parent = undefined
