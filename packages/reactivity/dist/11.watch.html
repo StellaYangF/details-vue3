@@ -4,27 +4,35 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>watch</title>
+  <title>watch watchEffect</title>
 </head>
 <body>
   <div id="app"></div>
   <script type="module">
-    import { reactive, watch } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    // import { reactive, watch, watchEffect } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
 
-    // import { reactive, watch } from './index.js'
+    import { reactive, watch, watchEffect } from './index.js'
     
     const state = reactive({ name: 'Stella', age: 18 })
 
     // watch 默认是异步操作，同步执行给 flush: 'sync'
-    watch(() => state.name, (newVal,oldVal) => {
+    // watch(() => state.name, (newVal,oldVal) => {
       
-      console.log('data changed inner ---', newVal, oldVal)
+    //   console.log('data changed inner ---', newVal, oldVal)
+    // }, {
+    //   flush: 'sync'
+    // })
+
+    // watchEffect 就是 Effect，默认异步
+    watchEffect(() => {
+      console.log('inner')
+      app.innerHTML = state.name
     }, {
       flush: 'sync'
     })
   
-    state.name = 'Yang'
-    console.log('data updated outer')
+    state.name = 'yang'
+    console.log('outer')
 
   </script>
 </body>

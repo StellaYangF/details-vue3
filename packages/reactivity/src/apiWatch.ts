@@ -8,7 +8,16 @@ import { ReactiveEffect } from "./effect";
 // watch 可以监听一个响应式对象
 
 // 模拟 effect + scheduler 取值操作，收集依赖，并将前后取值返回
-export function watch(source, cb) {
+export function watch(source, cb, options) {
+  doWatch(source, cb, options)
+}
+
+// watchEffect 本质是一个 effect
+export function watchEffect(source, options) {
+  doWatch(source, null, options)
+}
+
+export function doWatch(source, cb, options) {
   // 1. source 是响应式对象
   // 2. source 是一个函数
   // 3. ReactiveEffect fn 为取值操作，() => 自动触发操作
@@ -23,9 +32,13 @@ export function watch(source, cb) {
   let oldValue
 
   const scheduler = () => {
-    const newValue = effect.run()
-    cb(newValue, oldValue)
-    oldValue = newValue
+    if (cb) {
+      const newValue = effect.run()
+      cb(newValue, oldValue)
+      oldValue = newValue
+    } else {
+      effect.run()
+    }
   }
 
   const effect = new ReactiveEffect(getter, scheduler)

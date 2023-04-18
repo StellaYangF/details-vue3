@@ -135,7 +135,13 @@ function isReactive(target) {
 }
 
 // packages/reactivity/src/apiWatch.ts
-function watch(source, cb) {
+function watch(source, cb, options) {
+  doWatch(source, cb, options);
+}
+function watchEffect(source, options) {
+  doWatch(source, null, options);
+}
+function doWatch(source, cb, options) {
   let getter;
   if (isReactive(source)) {
     getter = traverse(source);
@@ -144,9 +150,13 @@ function watch(source, cb) {
   }
   let oldValue;
   const scheduler = () => {
-    const newValue = effect2.run();
-    cb(newValue, oldValue);
-    oldValue = newValue;
+    if (cb) {
+      const newValue = effect2.run();
+      cb(newValue, oldValue);
+      oldValue = newValue;
+    } else {
+      effect2.run();
+    }
   };
   const effect2 = new ReactiveEffect(getter, scheduler);
   oldValue = effect2.run();
@@ -168,11 +178,13 @@ export {
   ReactiveEffect,
   ReactiveFlags,
   activeEffect,
+  doWatch,
   effect,
   isReactive,
   reactive,
   track,
   trigger,
-  watch
+  watch,
+  watchEffect
 };
 //# sourceMappingURL=index.js.map

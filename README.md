@@ -313,11 +313,69 @@ state 属性对应的对象，也需要深度代理
 
 ## watch Method
 
+### watch
 `Vue` 框架，分包管理。`watch` 的大致关系为 `vue` -> `runtime-dom` -> `reactivity`
 
-watch 内部就是 new 一个 ReactiveEffect，传入 fn 和 scheduler，fn 包装成 getter，触发取值操作，数据变化时，自行执行 scheduler
+watch 内部就是 new 一个 `ReactiveEffect`，传入 fn 和 `scheduler`，fn 包装成 getter，触发取值操作，数据变化时，自行执行 `scheduler`
+
+### watchEffect
+watchEffect 本质就是一个 effect，默认是异步执行；
+watch 是监控一个数据的变化，数据更新执行 effect
 
 ```js
+// effect + scheduler 取值操作，收集依赖，并将前后取值返回
+export function watch(source, cb, options) {
+  doWatch(source, cb, options)
+}
+
+// watchEffect 本质是一个 effect
+export function watchEffect(source, options) {
+  doWatch(source, null, options)
+}
+
+/** 
+* 不同点：
+* 1. 参数一：watch 两种传参方式（对象 or 函数返回值取值），即 getter
+* 2. 参数二：watch 数据更新的回调函数。watchEffect 是 options，没有
+
+* 相同点：
+* 1. 默认都是异步执行操作
+* 2. 参数三，可传入 flush 参数，取消异步执行时机
+*/
+export function doWatch(source, cb, options) {
+  // 1. source 是响应式对象
+  // 2. source 是一个函数
+  // 3. ReactiveEffect fn 为取值操作，() => 自动触发操作
+
+  let getter;
+  if (isReactive(source)) {
+    getter = traverse(source)
+  } else if (isFunction(source)) {
+    // watchEffect 传入的就是包含取值操作的函数，new ReactiveEffect 时取值收集依赖
+    getter = source
+  }
+
+  let oldValue
+
+  const scheduler = () => {
+    if (cb) {
+      // watch 函数，第二个参数
+      const newValue = effect.run()
+      cb(newValue, oldValue)
+      oldValue = newValue
+    } else {
+      // watchEffect 则是直接帮忙执行 source 方法，等同于 effect 方法
+      effect.run()
+    }
+  }
+
+  // watch 和 watchEffect 复用 new ReactiveEffect，传入 scheduler
+  // scheduler 根据是否传入 cb，
+  const effect = new ReactiveEffect(getter, scheduler)
+
+  // 先触发取值，收集依赖，保存 getter 返回的值
+  oldValue = effect.run()
+}
 ```
 
 ## Key Points
