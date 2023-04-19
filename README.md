@@ -378,6 +378,21 @@ export function doWatch(source, cb, options) {
 }
 ```
 
+### watch cleanup
+
+
+背景
+**场景**：用户输入框中，输入信息查询，后端数据返回时间问题，会导致返回数据渲染问题。
+**方案**：
+  1. 取消请求
+  2. 清理定时器
+  3. 屏蔽数据
+**代码解决**
+  1. vue2 中需要自行解决
+  2. vue3 提供 onCleanup 回调函数
+
+
+
 ## Key Points
 
 1. 每个组件就是一个 effect

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>watch cleanup</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { reactive, watch, watchEffect } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    // import { reactive, watch, watchEffect } from './index.js'
+
+    // mock backend response
+    let time = 3000
+    function getData(input) {
+      return new Promise(resolve => {
+        setTimeout(() => resolve(input), time -= 1000)
+      })
+    }
+
+    const state = reactive({ name: 'Stella', age: 18 })
+
+    let arr = []
+    watch(() => state.age, async function callback (newVal, oldVal, onCleanup) {
+      // 屏蔽返回的数据，不进行更新
+
+      // vue2 处理方式
+      // 闭包：函数的创建和执行不在一个作用域。
+      // debugger 
+      // 通过代码调试：
+      // 每次更新age值，都会触发 callback 执行，getData 返回的数据需要等待时间
+      // 
+
+      while(arr.length > 0) {
+        let fn = arr.shift()
+        fn()
+      }
+
+      let flag = true
+      arr.push(() => flag = false )
+      // vue3 提供 onCleanup
+      // let flag = true
+      // onCleanup(() => flag = false)
+
+      const res = await getData(newVal)
+      flag && (app.innerHTML = res)
+    })
+
+    // 不用 setTimeout 默认批量更新
+    const timer1 = setTimeout(() => state.age = 19) // 3s后返回
+    const timer2 = setTimeout(() => state.age = 20) // 2s后返回
+    const timer3 = setTimeout(() => state.age = 21) // 1s后返回 newVal
+
+    
+  </script>
+</body>
+</html>
