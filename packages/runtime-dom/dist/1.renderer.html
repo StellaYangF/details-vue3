@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-dom</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { createRenderer, h } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    // import { createRender } from './index.js'
+
+    // vue 组成：运行时和编译时
+    // 不要编译时，就是去掉模板变成函数的过程
+    // 运行时：core核心运行时（不依赖任何平台）dom（依赖某个平台，提供对应api）
+    
+    // vue -> (createApp)runtime-dom -> runtime-core(虚拟dom) -> reactivity
+
+    // createRender 需要提供一些列操作 dom 方法，供渲染调用
+    const renderer = createRenderer({
+      createElement(element) {
+        return document.createElement(element)
+      },
+      setElementText(el, text) {
+        el.innerHTML = text
+      },
+      insert(el, container) {
+        container.appendChild(el)
+      }
+    })
+
+    // render 函数三个参数 vnode, container, isSVG
+    renderer.render(h('h1','hello world'), app)
+    
+    document.createComment('helofejo')
+  </script>
+</body>
+</html> 

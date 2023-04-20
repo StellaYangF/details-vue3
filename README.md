@@ -512,6 +512,70 @@ const scheduler = () => {
 自动去掉 ref.value，template 模板帮忙做了操作
 ![proxyRefs](./assets/proxyRefs.png)
 
+
+## runtime 相关
+
+**vue 组成**
+运行时和编译时
+不要编译时，就是去掉模板变成函数的过程
+运行时：core核心运行时（不依赖任何平台）dom（依赖某个平台，提供对应api）
+    
+vue -> runtime-dom -> runtime-core(虚拟dom) -> reactivity
+
+### runtime-dom
+`渲染器`的作用是把虚拟 DOM 渲染为特定平台上的真实元素。在浏览器中，渲染器会把虚拟 DOM 渲染成真实 DOM 元素
+
+#### 操作节点
+`runtime-dom/src/nodeOps` 存放常见 `DOM` 操作 `API`，不同运行时提供的具体实现不一样，最终将操作方法传递到 `runtime-core` 中，所以 `runtime-core` 不需要关心平台相关代码~
+```js
+const doc = typeof document !== 'undefined' ? document : null
+
+export const nodeOps = {
+  insert: (child, parent, anchor) => {
+    parent.insertBefore(child, parent, anchor || null)
+  },
+
+  remove: child => {
+    const parent = child.parentNode
+    if (parent) {
+      parent.removeChild(child)
+    }
+  },
+
+  createElement: tag => doc.createElement(tag),
+
+  createText: text => doc.createTextNode(text),
+
+  createComment: text => doc.createComment(text),
+
+  setText: (node, text) => {
+    node.nodeValue = text
+  },
+
+  setElementText: (el, text) => {
+    el.textContent = text
+  },
+
+  parentNode: node => node.parentNode,
+
+  nextSibling: node => node.nextSibling,
+
+  querySelector: selector => doc.querySelector(selector)
+}
+```
+
+#### 比对属性方法
+
+#### 操作类名
+
+#### 操作样式
+
+#### 操作事件
+
+#### 操作属性
+
+#### 创建渲染器
+
 ## Key Points
 
 1. 每个组件就是一个 effect
