@@ -388,8 +388,8 @@ export function doWatch(source, cb, options) {
   2. 清理定时器
   3. 屏蔽数据（类似防抖操作，最新请求发出时，丢弃上次请求返回值）
 **代码解决**
-  1. vue2 中需要自行解决
-  2. vue3 提供 onCleanup 回调函数
+  1. `vue2` 中需要自行解决
+  2. `vue3` 提供 `onCleanup` 回调函数
   ```js
   // mock backend response
     let time = 3000
@@ -454,10 +454,9 @@ const scheduler = () => {
 }
 ```
 
-
 ## computed
 
-计算属性特点：
+### 计算属性特点
 1. 主要是根据其他数据进行衍生数据
 2. 懒执行，若依赖的值不发生变化，不会重新执行，dirty 缓存
   ```js
@@ -485,8 +484,22 @@ const scheduler = () => {
   ```
 3. 自身无法修改
 4. 依赖的数据变化，后续再取值会获取新值，不是 effect 不会触发更新，再次取值获取新值
+5. 返回 `ComputedRefImpl`，自行收集依赖、触发 effect 执行
 
+### 代码实现
 ![computed](./assets/computed.png)
+
+## ref
+
+### 背景
+1. `proxy` 代理的目标必须是非原始值，所以 `reactive` 不支持原始值类型
+2. `Ref` 将原始值类型进行包装
+3. 返回 `RefImpl` 进行管理
+4. 访问器属性，取值和更新时，收集依赖与触发更新操作
+5. 区分 ref 和 shallowRef，单层代理
+
+### 代码实现
+![ref](./assets/ref.png)
 
 ## Key Points
 

@@ -231,6 +231,41 @@ function computed(getterOptions) {
   }
   return new ComputedRefImpl(getter, setter);
 }
+
+// packages/reactivity/src/ref.ts
+var RefImpl = class {
+  constructor(rawValue, _shallow) {
+    this.rawValue = rawValue;
+    this._shallow = _shallow;
+    this.__v_isRef = true;
+    this._value = _shallow ? rawValue : toReactive(rawValue);
+  }
+  get value() {
+    if (activeEffect) {
+      trackEffects(this.dep || (this.dep = /* @__PURE__ */ new Set()));
+    }
+    return this._value;
+  }
+  set value(newVal) {
+    if (newVal !== this.rawValue) {
+      this._value = newVal;
+      this.rawValue = this._shallow ? newVal : toReactive(newVal);
+      triggerEffects(this.dep);
+    }
+  }
+};
+function toReactive(value) {
+  return isObject(value) ? reactive(value) : value;
+}
+function createRef(rawValue, shallow) {
+  return new RefImpl(rawValue, shallow);
+}
+function ref(value) {
+  return createRef(value, false);
+}
+function shallowRef(value) {
+  return createRef(value, true);
+}
 export {
   ReactiveEffect,
   ReactiveFlags,
@@ -240,6 +275,8 @@ export {
   effect,
   isReactive,
   reactive,
+  ref,
+  shallowRef,
   track,
   trackEffects,
   trigger,
