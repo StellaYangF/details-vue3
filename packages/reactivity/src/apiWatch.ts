@@ -30,11 +30,16 @@ export function doWatch(source, cb, options) {
   }
 
   let oldValue
-
+  let cleanup;
+  const onCleanup = fn => {
+    cleanup = fn
+  }
   const scheduler = () => {
+    if (cleanup) cleanup()
+
     if (cb) {
       const newValue = effect.run()
-      cb(newValue, oldValue)
+      cb(newValue, oldValue, onCleanup)
       oldValue = newValue
     } else {
       effect.run()

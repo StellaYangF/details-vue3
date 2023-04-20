@@ -9,10 +9,10 @@
 <body>
   <div id="app"></div>
   <script type="module">
-    import { reactive, watch, watchEffect } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
-    // import { reactive, watch, watchEffect } from './index.js'
+    // import { reactive, watch, watchEffect } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    import { reactive, watch, watchEffect } from './index.js'
 
-    // mock backend response
+    // mock backend responsez
     let time = 3000
     function getData(input) {
       return new Promise(resolve => {
@@ -31,18 +31,19 @@
       // debugger 
       // 通过代码调试：
       // 每次更新age值，都会触发 callback 执行，getData 返回的数据需要等待时间
-      // 
+      // 类似防抖操作，下一次请求操作发出时，丢弃上次的返回值
 
-      while(arr.length > 0) {
-        let fn = arr.shift()
-        fn()
-      }
+      // while(arr.length > 0) {
+      //   let fn = arr.shift()
+      //   fn()
+      // }
 
-      let flag = true
-      arr.push(() => flag = false )
-      // vue3 提供 onCleanup
       // let flag = true
-      // onCleanup(() => flag = false)
+      // arr.push(() => flag = false )
+
+      // vue3 提供 onCleanup
+      let flag = true
+      onCleanup(() => flag = false)
 
       const res = await getData(newVal)
       flag && (app.innerHTML = res)

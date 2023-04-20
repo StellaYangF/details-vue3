@@ -386,12 +386,73 @@ export function doWatch(source, cb, options) {
 **方案**：
   1. 取消请求
   2. 清理定时器
-  3. 屏蔽数据
+  3. 屏蔽数据（类似防抖操作，最新请求发出时，丢弃上次请求返回值）
 **代码解决**
   1. vue2 中需要自行解决
   2. vue3 提供 onCleanup 回调函数
+  ```js
+  // mock backend response
+    let time = 3000
+    function getData(input) {
+      return new Promise(resolve => {
+        setTimeout(() => resolve(input), time -= 1000)
+      })
+    }
 
+    const state = reactive({ name: 'Stella', age: 18 })
 
+    let arr = []
+    watch(() => state.age, async function callback (newVal, oldVal, onCleanup) {
+      // 屏蔽返回的数据，不进行更新
+
+      // vue2 处理方式
+      // 闭包：函数的创建和执行不在一个作用域。
+      // debugger 
+      // 通过代码调试：
+      // 每次更新age值，都会触发 callback 执行，getData 返回的数据需要等待时间
+      // 类似防抖操作，下一次请求操作发出时，丢弃上次的返回值
+
+      while(arr.length > 0) {
+        let fn = arr.shift()
+        fn()
+      }
+
+      let flag = true
+      arr.push(() => flag = false )
+      // vue3 提供 onCleanup
+      // let flag = true
+      // onCleanup(() => flag = false)
+
+      const res = await getData(newVal)
+      flag && (app.innerHTML = res)
+    })
+
+    // 不用 setTimeout 默认批量更新
+    const timer1 = setTimeout(() => state.age = 19) // 3s后返回
+    const timer2 = setTimeout(() => state.age = 20) // 2s后返回
+    const timer3 = setTimeout(() => state.age = 21) // 1s后返回 newVal
+  ```
+
+vue3 实现
+```js
+// apiWatch.ts
+
+let cleanup;
+const onCleanup = fn => {
+  cleanup = fn
+}
+const scheduler = () => {
+  if (cleanup) cleanup()
+
+  if (cb) {
+    const newValue = effect.run()
+    cb(newValue, oldValue, onCleanup)
+    oldValue = newValue
+  } else {
+    effect.run()
+  }
+}
+```
 
 ## Key Points
 
