@@ -55,11 +55,14 @@ function track(target, type, key) {
     if (!dep) {
       depsMap.set(key, dep = /* @__PURE__ */ new Set());
     }
-    let shouldTrack = !dep.has(activeEffect);
-    if (shouldTrack) {
-      dep.add(activeEffect);
-      activeEffect.deps.push(dep);
-    }
+    trackEffects(dep);
+  }
+}
+function trackEffects(dep) {
+  let shouldTrack = !dep.has(activeEffect);
+  if (shouldTrack) {
+    dep.add(activeEffect);
+    activeEffect.deps.push(dep);
   }
 }
 function trigger(target, type, key, value, oldValue) {
@@ -67,8 +70,20 @@ function trigger(target, type, key, value, oldValue) {
   if (!depsMap) {
     return;
   }
-  const deps = depsMap.get(key) || /* @__PURE__ */ new Set();
-  const effects = [...deps];
+  const dep = depsMap.get(key) || /* @__PURE__ */ new Set();
+  const effects = [...dep];
+  effects && effects.forEach((effect2) => {
+    if (effect2 !== activeEffect) {
+      if (effect2.scheduler) {
+        effect2.scheduler();
+      } else {
+        effect2.run();
+      }
+    }
+  });
+}
+function triggerEffects(dep) {
+  const effects = [...dep];
   effects && effects.forEach((effect2) => {
     if (effect2 !== activeEffect) {
       if (effect2.scheduler) {
@@ -180,16 +195,56 @@ function traverse(value, seen = /* @__PURE__ */ new Set()) {
   }
   return value;
 }
+
+// packages/reactivity/src/computed.ts
+var ComputedRefImpl = class {
+  constructor(getter, setter) {
+    this.setter = setter;
+    this._dirty = true;
+    this.effect = new ReactiveEffect(getter, () => {
+      this._dirty = true;
+      triggerEffects(this.dep);
+    });
+  }
+  get value() {
+    if (activeEffect) {
+      trackEffects(this.dep || (this.dep = /* @__PURE__ */ new Set()));
+    }
+    if (this._dirty) {
+      this._value = this.effect.run();
+      this._dirty = false;
+    }
+    return this._value;
+  }
+  set vlaue(newVal) {
+    this.setter(newVal);
+  }
+};
+var isGetter = (getterOptions) => isFunction(getterOptions);
+function computed(getterOptions) {
+  let getter;
+  let setter;
+  if (isGetter) {
+    getter = getterOptions;
+  } else {
+    getter = getterOptions.get;
+    setter = getterOptions.set;
+  }
+  return new ComputedRefImpl(getter, setter);
+}
 export {
   ReactiveEffect,
   ReactiveFlags,
   activeEffect,
+  computed,
   doWatch,
   effect,
   isReactive,
   reactive,
   track,
+  trackEffects,
   trigger,
+  triggerEffects,
   watch,
   watchEffect
 };

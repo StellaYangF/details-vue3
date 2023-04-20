@@ -4,9 +4,9 @@ export let activeEffect = null
 const targetMap = new WeakMap()
 export class ReactiveEffect {
   private parent
-  active = true
+  public active = true
   // 记录 effect 中使用的属性
-  deps = []
+  public deps = []
   constructor(private fn, public scheduler) { }
 
   run() {
@@ -37,10 +37,8 @@ export class ReactiveEffect {
   }
 }
 
-
 export function effect(fn, options: any = {}) {
   const _effect = new ReactiveEffect(fn, options.scheduler)
-
 
   _effect.run()
   /**
@@ -65,13 +63,17 @@ export function track(target, type, key) {
       depsMap.set(key, (dep = new Set()))
     }
 
-    let shouldTrack = !dep.has(activeEffect)
-    if (shouldTrack) {
-      dep.add(activeEffect)
-      // name & address 对应的 dep 是两个不同的 set
-      // name => [dep]   address => [dep]
-      activeEffect.deps.push(dep)
-    }
+    trackEffects(dep)
+  }
+}
+
+export function trackEffects(dep) {
+  let shouldTrack = !dep.has(activeEffect)
+  if (shouldTrack) {
+    dep.add(activeEffect)
+    // name & address 对应的 dep 是两个不同的 set
+    // name => [dep]   address => [dep]
+    activeEffect.deps.push(dep)
   }
 }
 
@@ -81,7 +83,7 @@ export function trigger(target, type, key, value, oldValue) {
     return
   }
 
-  const deps = depsMap.get(key) || new Set()
+  const dep = depsMap.get(key) || new Set()
   /**
    * 直接操作 effects 会导致死循环
    * 解决：应改为副本，再迭代操作
@@ -90,7 +92,7 @@ export function trigger(target, type, key, value, oldValue) {
    * { age: Set[e2, e3] }
    */
 
-  const effects = [...deps]
+  const effects = [...dep]
   effects && effects.forEach(effect => {
     // 防止再次执行的 effect
     if (effect !== activeEffect) {
@@ -102,6 +104,20 @@ export function trigger(target, type, key, value, oldValue) {
     }
   });
 
+}
+
+export function triggerEffects(dep) {
+  const effects = [...dep]
+  effects && effects.forEach(effect => {
+    // 防止再次执行的 effect
+    if (effect !== activeEffect) {
+      if (effect.scheduler) {
+        effect.scheduler()
+      } else {
+        effect.run()
+      }
+    }
+  });
 }
 
 function cleanupEffect(effect) {

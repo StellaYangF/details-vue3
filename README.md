@@ -454,6 +454,40 @@ const scheduler = () => {
 }
 ```
 
+
+## computed
+
+计算属性特点：
+1. 主要是根据其他数据进行衍生数据
+2. 懒执行，若依赖的值不发生变化，不会重新执行，dirty 缓存
+  ```js
+    const state = reactive({ firstname: 'Stella', lastname: 'Yang' })
+
+    const fullname = computed({
+      get() {
+        // 读取多次，get 取值器只会触发一次，数据dirty，再次读取再次触发
+        console.log('get fullname')
+        return state.firstname + ' ' +  state.lastname
+      }, 
+      set() {
+
+      }
+    })
+
+    
+    app.innerHTML = fullname.value
+    fullname.value
+    fullname.value
+    fullname.value
+  
+
+    state.firstname = 'Fan'
+  ```
+3. 自身无法修改
+4. 依赖的数据变化，后续再取值会获取新值，不是 effect 不会触发更新，再次取值获取新值
+
+![computed](./assets/computed.png)
+
 ## Key Points
 
 1. 每个组件就是一个 effect
