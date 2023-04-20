@@ -29,17 +29,15 @@ class ComputedRefImpl {
     return this._value
   }
 
-  set vlaue(newVal) {
+  set value(newVal) {
     this.setter(newVal)
   }
 }
 
-const isGetter = getterOptions => isFunction(getterOptions)
-
 export function computed(getterOptions) {
   let getter
   let setter
-  if (isGetter) {
+  if (isFunction(getterOptions)) {
     getter = getterOptions
   } else {
     getter = getterOptions.get

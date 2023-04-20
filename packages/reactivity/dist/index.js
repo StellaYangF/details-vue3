@@ -216,15 +216,14 @@ var ComputedRefImpl = class {
     }
     return this._value;
   }
-  set vlaue(newVal) {
+  set value(newVal) {
     this.setter(newVal);
   }
 };
-var isGetter = (getterOptions) => isFunction(getterOptions);
 function computed(getterOptions) {
   let getter;
   let setter;
-  if (isGetter) {
+  if (isFunction(getterOptions)) {
     getter = getterOptions;
   } else {
     getter = getterOptions.get;

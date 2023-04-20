@@ -245,3 +245,14 @@ state 属性对应的对象，也需要深度代理
     return res
   },
 ```
+
+### 代码实现
+
+effect.ts
+![effect](../assets/effect.png)
+
+reactive.ts
+![reative](../assets/reactive.png)
+
+baseHandlers.ts
+![baseHandlers](../assets/baseHandlers.png)

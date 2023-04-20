@@ -15,23 +15,25 @@
     const state = reactive({ firstname: 'Stella', lastname: 'Yang' })
 
     // computed 可接收一个函数 getter OR 对象
-    const fullname = computed(() => {
-        // 读取多次，get 取值器只会触发一次，数据dirty，再次读取再次触发
-        console.log('get fullname')
-        return state.firstname + ' ' +  state.lastname
-      })
-
-    // const fullname = computed({
-    //   get() {
+    // const fullname = computed(() => {
     //     // 读取多次，get 取值器只会触发一次，数据dirty，再次读取再次触发
     //     console.log('get fullname')
     //     return state.firstname + ' ' +  state.lastname
-    //   }, 
-    //   set() {
+    //   })
 
-    //   }
-    // })
+    const fullname = computed({
+      get() {
+        // 读取多次，get 取值器只会触发一次，数据dirty，再次读取再次触发
+        console.log('get fullname')
+        return state.firstname + ' ' +  state.lastname
+      }, 
+      set(newVal) {
+        console.warn('Computed data cannot be changed.')
+      }
+    })
 
+
+    fullname.value = 'try to change computed name'
 
     effect(() => app.innerHTML = fullname.value)
     console.log(fullname)
