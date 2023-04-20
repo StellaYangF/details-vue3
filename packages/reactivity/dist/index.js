@@ -5,6 +5,9 @@ function isObject(val) {
 function isFunction(val) {
   return typeof val === "function";
 }
+function isArray(val) {
+  return Array.isArray(val);
+}
 
 // packages/reactivity/src/effect.ts
 var activeEffect = null;
@@ -266,6 +269,47 @@ function ref(value) {
 function shallowRef(value) {
   return createRef(value, true);
 }
+var ObjectReeImpl = class {
+  constructor(_object, _key) {
+    this._object = _object;
+    this._key = _key;
+    this.__v_isRef = true;
+  }
+  get value() {
+    return this._object[this._key];
+  }
+  set value(newVal) {
+    this._object[this._key] = newVal;
+  }
+};
+function toRef(object, key) {
+  return new ObjectReeImpl(object, key);
+}
+function toRefs(object) {
+  const ref2 = isArray(object) ? new Array(object.length) : {};
+  for (const key in object) {
+    ref2[key] = toRef(object, key);
+  }
+  return ref2;
+}
+function proxyRefs(objectWithRefs) {
+  return new Proxy(objectWithRefs, {
+    get(target, key, receiver) {
+      const v = Reflect.get(target, key, receiver);
+      return v.__v_isRef ? v.value : v;
+    },
+    // 设置的时候如果是ref,则给ref.value赋值
+    set(target, key, value, receiver) {
+      const oldValue = target[key];
+      if (oldValue.__v_isRef) {
+        oldValue.value = value;
+        return value;
+      } else {
+        return Reflect.set(target, key, value, receiver);
+      }
+    }
+  });
+}
 export {
   ReactiveEffect,
   ReactiveFlags,
@@ -274,9 +318,12 @@ export {
   doWatch,
   effect,
   isReactive,
+  proxyRefs,
   reactive,
   ref,
   shallowRef,
+  toRef,
+  toRefs,
   track,
   trackEffects,
   trigger,

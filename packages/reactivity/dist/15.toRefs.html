@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>toRef</title>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { reactive, effect, toRef, toRefs, proxyRefs } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    import { reactive, effect, toRef, toRefs, proxyRefs } from './index.js'
+
+    // proxy 代理的目标必须是非原始值，所以 reactive 不支持原始值类型。所以需要将原始值类型进行包装。
+    const state = reactive({ name: 'Stella', age: 18 })
+    // const name = toRef(state, 'name')
+    // const age = toRef(state, 'age')
+
+    const { name, age } = { ...toRefs(state) }
+    const person = proxyRefs({ ...toRefs(state) })
+    console.log(person)
+
+    effect(() => {
+      app.innerHTML = name.value + ' ' + age.value
+    })
+
+    setTimeout(() => {
+      name.value = 'Yang'
+      age.value = 20
+    }, 1000);
+
+
+    /* 自动去掉 ref.value */
+    
+  </script>
+</body>
+</html>
