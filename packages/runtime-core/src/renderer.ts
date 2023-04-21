@@ -28,6 +28,9 @@ export const enum ShapeFlags {
  * ^  异或-> 两位两同0，相异1
  */
 
+const isSameVNodeType = (n1, n2) => {
+  return n1.type === n2.type && n1.key === n2.key
+}
 
 export function createRenderer(options) {
   const {
@@ -80,14 +83,68 @@ export function createRenderer(options) {
     hostRemove(vnode.el)
   }
 
+  const patchProp = (oldProps, newProps) => { }
+
+  const unmountChildren = children => {
+    for (let i = 0; i < children.length; i++) {
+      hostRemove(children[i])
+    }
+  }
+
+  const patchChildren = (n1, n2, el) => {
+    const c1 = n1.children
+    const c2 = n2.children
+
+    const prevShapeFlag = c1.shapeFlag
+    const shapeFlag = c2.shapeFlag
+
+    if (shapeFlag & shapeFlag.TEXT_CHILDREN) {
+      // 新元素是文本 | 老：数组、文本、空
+      if (prevShapeFlag & shapeFlag.ARRAY_CHILDREN) {
+        unmountChildren(c1)
+      }
+      if (c1 !== c2) {
+        hostSetElementText(el, c2)
+      }
+    } else {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          // core diff 算法
+        } else {
+          unmountChildren(c1)
+        }
+      } else { }
+    }
+  }
+
+  const patchElement = (n1, n2) => {
+    const el = n2.el = n1.el
+
+    const oldProps = n1.props || {}
+    const newProps = n2.props || {}
+
+    patchProp(oldProps, newProps)
+    patchChildren(n1, n2, el)
+  }
+
   const patch = (n1, n2, container) => {
-    if (n1 == n2) return
     // 初始化 & diff 算法
+
+    // 1. 同一个 VNode 不用处理
+    if (n1 === n2) return
+
+    // 2. 两元素不同，卸载老的 VNode
+    if (n1 && !isSameVNodeType(n1, n2)) {
+      unmount(n1)
+      n1 = null
+    }
+
     if (n1 == null) {
       // mount
       mountElement(n2, container)
     } else {
-      // TODO diff 算法
+      // diff 算法 - 前后元素一致
+      patchElement(n1, n2)
     }
   }
 

@@ -118,6 +118,9 @@ var ShapeFlags = /* @__PURE__ */ ((ShapeFlags2) => {
   ShapeFlags2[ShapeFlags2["COMPOENNT"] = 6] = "COMPOENNT";
   return ShapeFlags2;
 })(ShapeFlags || {});
+var isSameVNodeType = (n1, n2) => {
+  return n1.type === n2.type && n1.key === n2.key;
+};
 function createRenderer(options) {
   const {
     insert: hostInsert,
@@ -155,12 +158,53 @@ function createRenderer(options) {
   const unmount = (vnode) => {
     hostRemove(vnode.el);
   };
+  const patchProp2 = (oldProps, newProps) => {
+  };
+  const unmountChildren = (children) => {
+    for (let i = 0; i < children.length; i++) {
+      hostRemove(children[i]);
+    }
+  };
+  const patchChildren = (n1, n2, el) => {
+    const c1 = n1.children;
+    const c2 = n2.children;
+    const prevShapeFlag = c1.shapeFlag;
+    const shapeFlag = c2.shapeFlag;
+    if (shapeFlag & shapeFlag.TEXT_CHILDREN) {
+      if (prevShapeFlag & shapeFlag.ARRAY_CHILDREN) {
+        unmountChildren(c1);
+      }
+      if (c1 !== c2) {
+        hostSetElementText(el, c2);
+      }
+    } else {
+      if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
+        if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+        } else {
+          unmountChildren(c1);
+        }
+      } else {
+      }
+    }
+  };
+  const patchElement = (n1, n2) => {
+    const el = n2.el = n1.el;
+    const oldProps = n1.props || {};
+    const newProps = n2.props || {};
+    patchProp2(oldProps, newProps);
+    patchChildren(n1, n2, el);
+  };
   const patch = (n1, n2, container) => {
-    if (n1 == n2)
+    if (n1 === n2)
       return;
+    if (n1 && !isSameVNodeType(n1, n2)) {
+      unmount(n1);
+      n1 = null;
+    }
     if (n1 == null) {
       mountElement(n2, container);
     } else {
+      patchElement(n1, n2);
     }
   };
   const render2 = (vnode, container) => {

@@ -842,6 +842,67 @@ const render = (vnode, container) => {
 }
 ```
 
+## Diff 算法
+
+### 不同 VNode 元素比对
+
+两个不同虚拟节点不需要进行比较，直接移除老节点，将新的虚拟节点渲染成真实 DOM 进行挂载即可
+
+```js
+const patch = (n1, n2, container) => {
+  // 初始化 & diff 算法
+
+  // 1. 同一个 VNode 不用处理
+  if (n1 === n2) return
+
+  // 2. 两元素不同，卸载老的 VNode
+  if (n1 && !isSameVNodeType(n1, n2)) {
+    unmount(n1)
+    n1 = null
+  }
+
+  if (n1 == null) {
+    // mount
+    mountElement(n2, container)
+  } else {
+    // diff 算法
+  }
+}
+```
+
+### 元素一致
+前后元素一致则比较两个元素的属性和子节点
+```js
+const patchElement = (n1, n2) => {
+  const el = n2.el = n1.el
+
+  const oldProps = n1.props || {}
+  const newProps = n2.props || {}
+
+  patchProp(oldProps, newProps)
+  patchChildren(n1, n2, el)
+}
+```
+
+### 子元素比对分类
+
+| 新 | 老 | 操作 |
+| -- | -- |  --  |
+| 文本| 数组| 删除老的，设置文本内容  |
+| 文本| 文本| 更新文本即可|
+| 文本| 空  | 更新文本|
+| 数组| 数组| diff 算法|
+| 数组| 文本| 清空文本，挂载|
+| 数组| 空  | 挂载|
+| 空  | 数组| 删除所有子元素|
+| 空  | 文本| 清空文本|
+| 空  | 空  | 不用处理|
+
+
+### 最长递增子序列
+
+
+
 ## 补充
 
 ### 位运算符 
