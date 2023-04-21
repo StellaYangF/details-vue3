@@ -114,11 +114,6 @@ export function render(vdnode, container) {
   renderer.render(vdnode, container)
 }
 
-
-
-const unmount = vnode => {
-}
-
 export function isVNode(value) {
   return value ? value.__v_isVNode === true : false
 }
