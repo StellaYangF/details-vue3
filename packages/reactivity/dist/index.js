@@ -1,4 +1,4 @@
-// packages/shared/src/index.ts
+// packages/shared/src/generals.ts
 function isObject(val) {
   return val !== null && typeof val === "object";
 }

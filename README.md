@@ -565,16 +565,117 @@ export const nodeOps = {
 ```
 
 #### 比对属性方法
+patchProps.ts
+```js
+export function patchProps(el, key, prevValue, nextValue) {
+  if (key === 'class') {
+    patchClass(el, nextValue)
+  } else if (key === 'style') {
+    patchStyle(el, prevValue, nextValue)
+  } else if (key.test(/^on[^a-z]/)) {
+    patchEvent(el, key, nextValue)
+  } else {
+    patchAttr(el, key, nextValue)
+  }
+}
+```
 
 #### 操作类名
+```js
+function patchClass(el: Element, value: string | null) {
+  if (value == null) {
+    el.removeAttribute('class')
+  } else {
+    // isSVG el.setAttribute('class', value)
+
+    // directly setting className should be faster than setAttribute in theory
+    // if this is an element during a transition, take the temporary transition
+    // classes into account.  
+    el.className = value
+  }
+}
+```
 
 #### 操作样式
+```js
+function patchStyle(el: Element, prev, next) {
+  const style = (el as HTMLElement).style
+
+  // add next style
+  for (const key in next) {
+    style[key] = next[key]
+  }
+
+  // remove previous style which not in next style
+  for (const key in prev) {
+    if (next[key] == null) {
+      style[key] = null
+    }
+  }
+}
+```
 
 #### 操作事件
+```js
+function createInvoker(initialValue) {
+  // 动态换绑事件回调
+  // el.addEventListener(name, nextValue) 
+  // nextValue 直接传入，后续更改了回调，需要解绑再绑
+  // el.addEventListener(name, invoker.value)
+  const invoker = e => invoker.value(e)
+  invoker.value = initialValue
+
+  return invoker
+}
+
+interface Invoker extends EventListener {
+  value: EventValue
+}
+
+type EventValue = Function | Function[]
+
+function patchEvent(
+  el: Element & { _vei?: Record<string, Invoker | undefined> },
+  rawName: string,
+  nextValue: EventValue | null
+) {
+  const invokers = el._vei || (el._vei = {})
+
+  // cache
+  const exsistingInvoker = invokers[rawName]
+
+  if (nextValue && exsistingInvoker) {
+    exsistingInvoker.value = nextValue
+  } else {
+    const name = rawName.slice(2).toLocaleLowerCase()
+
+    if (nextValue) {
+      // bind new event and cache
+      const invoker = (invokers[rawName] = createInvoker(nextValue))
+      el.addEventListener(name, invoker)
+    } else if (exsistingInvoker) {
+      // remove
+      el.removeEventListener(name, exsistingInvoker)
+      invokers[rawName] = undefined
+    }
+  }
+}
+```
 
 #### 操作属性
+```js
+function patchAttr(el: Element, key: string, value: any) {
+  if (value == null) {
+    el.removeAttribute(key)
+  } else {
+    el.setAttribute(key, value)
+  }
+}
+```
 
 #### 创建渲染器
+```js
+```
 
 ## Key Points
 
