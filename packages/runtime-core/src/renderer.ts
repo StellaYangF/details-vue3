@@ -2,6 +2,9 @@
 // 虚拟节点标识符
 // 位运算比运算快，常见三种
 // << 左移运算符（二进制补位0，后边数字移动位数）
+
+import { isArray, isObject, isString } from "@vue/shared"
+
 // >> 右移
 export const enum ShapeFlags {
   ELEMENT = 1,
@@ -43,4 +46,57 @@ function baseCreateRenderer(options, createHydrationFns?) {
     querySelector: hostQuerySelector
   } = options
 
+}
+
+export function isVNode(value) {
+  return value ? value.__v_isVNode === true : false
+}
+
+export const createVNode = (type, props, children = null) => {
+  const shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0
+
+  const vnode = {
+    __v_isVNode: true,
+    type,
+    props,
+    key: props && props.key,
+    el: null,
+    children,
+    shapeFlag
+  }
+
+  if (children) {
+    let type = 0
+    if (isArray(children)) {
+      type = ShapeFlags.ARRAY_CHILDREN
+    } else {
+      children = String(children)
+      type = ShapeFlags.TEXT_CHILDREN
+    }
+
+    vnode.shapeFlag |= type // 见1是1
+  }
+
+  return vnode
+}
+
+export function h(type, propsOrChildren?, children?) {
+  const l = arguments.length
+  if (l === 2) {
+    if (isObject(propsOrChildren) && !isArray(propsOrChildren)) {
+      if (isVNode(propsOrChildren)) {
+        return createVNode(type, null, [propsOrChildren])
+      }
+      return createVNode(type, propsOrChildren)
+    } else {
+      return createVNode(type, null, propsOrChildren)
+    }
+  } else {
+    if (l > 3) {
+      children = Array.prototype.slice.call(arguments, 2)
+    } else if (l === 3) {
+      children = [children]
+    }
+    return createVNode(type, propsOrChildren, children)
+  }
 }

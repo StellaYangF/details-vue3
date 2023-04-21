@@ -3,7 +3,7 @@
 const esbuild = require('esbuild')
 const { resolve } = require('path')
 
-const target = 'runtime-dom'
+const target = 'runtime-core'
 
 esbuild.context({
 	entryPoints: [resolve(__dirname, `../packages/${target}/src/index.ts`)],

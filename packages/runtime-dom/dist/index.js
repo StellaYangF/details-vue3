@@ -25,6 +25,7 @@ var nodeOps = {
 };
 
 // packages/shared/src/generals.ts
+var isArray = Array.isArray;
 var onRE = /^on[^a-z]/;
 var isOn = (key) => onRE.test(key);
 
