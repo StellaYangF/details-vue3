@@ -4,7 +4,7 @@ import { patchStyle } from "./modules/style"
 import { patchClass } from "./modules/class"
 import { patchAttr } from "./modules/attrs"
 
-export function patchProps(el, key, prevValue, nextValue) {
+export function patchProp(el, key, prevValue, nextValue) {
   if (key === 'class') {
     patchClass(el, nextValue)
   } else if (key === 'style') {

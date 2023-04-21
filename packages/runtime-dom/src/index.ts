@@ -1,4 +1,4 @@
 import { nodeOps } from "./nodeOps";
-import { patchProps } from "./patchProps";
+import { patchProp } from "./patchProp";
 
-export const renderOptions = Object.assign({ patchProps }, nodeOps)
+export const renderOptions = Object.assign({ patchProp }, nodeOps)

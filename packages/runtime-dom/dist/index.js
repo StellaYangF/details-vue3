@@ -2,7 +2,7 @@
 var doc = typeof document !== "undefined" ? document : null;
 var nodeOps = {
   insert: (child, parent, anchor) => {
-    parent.insertBefore(child, parent, anchor || null);
+    parent.appendChild(child);
   },
   remove: (child) => {
     const parent = child.parentNode;
@@ -83,8 +83,8 @@ function patchAttr(el, key, value) {
   }
 }
 
-// packages/runtime-dom/src/patchProps.ts
-function patchProps(el, key, prevValue, nextValue) {
+// packages/runtime-dom/src/patchProp.ts
+function patchProp(el, key, prevValue, nextValue) {
   if (key === "class") {
     patchClass(el, nextValue);
   } else if (key === "style") {
@@ -97,7 +97,7 @@ function patchProps(el, key, prevValue, nextValue) {
 }
 
 // packages/runtime-dom/src/index.ts
-var renderOptions = Object.assign({ patchProps }, nodeOps);
+var renderOptions = Object.assign({ patchProp }, nodeOps);
 export {
   renderOptions
 };

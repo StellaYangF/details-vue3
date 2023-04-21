@@ -2,7 +2,8 @@ const doc = typeof document !== 'undefined' ? document : null
 
 export const nodeOps = {
   insert: (child, parent, anchor) => {
-    parent.insertBefore(child, parent, anchor || null)
+    // parent.insertBefore(child, parent, anchor || null)
+    parent.appendChild(child)
   },
 
   remove: child => {
