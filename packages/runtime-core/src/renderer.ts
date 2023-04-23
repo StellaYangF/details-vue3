@@ -47,7 +47,7 @@ export function createRenderer(options) {
     patchProp: hostPatchProp
   } = options
 
-  const mountElement = (vnode, container) => {
+  const mountElement = (vnode, container, anchor) => {
     const { type, props, shapeFlag } = vnode
 
     // 1. createElement & 真实节点放在 _vnode 属性上
@@ -65,17 +65,17 @@ export function createRenderer(options) {
 
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       // 子元素是数组
-      mountChildren(vnode.children, el)
+      mountChildren(vnode.children, el, null)
     }
 
 
-    hostInsert(el, container)
+    hostInsert(el, container, anchor)
   }
 
-  const mountChildren = (children, container) => {
+  const mountChildren = (children, container, anchor) => {
     for (let i = 0; i < children.length; i++) {
       // 子元素继续 patch
-      patch(null, children[1], container)
+      patch(null, children[i], container, anchor)
     }
   }
 
@@ -113,15 +113,163 @@ export function createRenderer(options) {
     }
   }
 
-  const patchChildren = (n1, n2, el) => {
+  const patchKeyedChildren = (c1, c2, el) => {
+    let i = 0
+    const l2 = c2.length
+    let e1 = c1.length - 1 // prev ending index
+    let e2 = l2 - 1 // next ending index
+
+    // 1. sync from start
+    // (a b) c
+    // (a b) d e
+    // i = 2
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[i]
+      const n2 = c2[i]
+      if (isSameVNodeType(n1, n2)) {
+        patch(n1, n2, el)
+      } else {
+        break
+      }
+      i++
+    }
+
+    // 2. sync from end
+    // a (b c)
+    // d e (b c)
+    // e1 = 0, e2 = 1
+    while (i <= e1 && i <= e2) {
+      const n1 = c1[e1]
+      const n2 = c2[e2]
+      if (isSameVNodeType(n1, n2)) {
+        patch(n1, n2, el)
+      } else {
+        break
+      }
+      e1--
+      e2--
+    }
+
+    // 3. common sequence + mount
+    // (a b)
+    // (a b) c
+    // i = 2, e1 = 1, e2 = 2
+    // (a b)
+    // c (a b)
+    // i = 0, e1 = -1, e2 = 0
+    if (i > e1) {
+      if (i <= e2) {
+        const nextPos = e2 + 1
+        const anchor = nextPos < l2 ? c2[nextPos].el : null
+        while (i <= e2) {
+          patch(null, c2[i], el, anchor)
+          i++
+        }
+      }
+    }
+
+    // 4. common sequence + unmount
+    // (a b) c
+    // (a b)
+    // i = 2, e1 = 2, e2 = 1
+    // a (b c)
+    // (b c)
+    // i = 0, e1 = 0, e2 = -1
+    else if (i > e2) {
+      while (i <= e1) {
+        unmount(c1[i])
+        i++
+      }
+    }
+
+    // 5. unknown sequence
+    // [i ... e1 + 1]: a b [c d e] f g
+    // [i ... e2 + 1]: a b [e d c h] f g
+    // i = 2, e1 = 4, e2 = 5
+    else {
+      const s1 = i
+      const s2 = i
+
+      // 5.1 build key:index map for newChildren
+      const keyToNewIndexMap = new Map()
+      for (i = s2; i <= e2; i++) {
+        const nextChild = c2[i]
+        if (nextChild.key != null) {
+          keyToNewIndexMap.set(nextChild.key, i)
+        }
+      }
+
+      // 5.2 loop through old children left to be patched and try to patch
+      // matching nodes & remove nodes that are no longer present
+      let j
+      let patched = 0
+      const toBePatched = e2 - s2 + 1
+      let moved = false
+      // usedto track whether any node has moved
+      let maxNewIndexSoFar = 0
+      // works as Map<newIndex, oldIndex>
+      // Note that oldIndex is offset by +1
+      // and oldIndex = 0 is a special value indicating the new node has
+      // no corresponding old node.
+      // used for determining longest stable subsequence
+      const newIndexToOldIndexMap = new Array(toBePatched)
+      for (i = 0; i < toBePatched; i++) newIndexToOldIndexMap[i] = 0
+
+      for (i = s1; i <= e1; i++) {
+        const prevChild = c1[i]
+        if (patched >= toBePatched) {
+          // all new children have been patched so this can only be a removal
+          unmount(prevChild)
+          continue
+        }
+        let newIndex
+        if (prevChild.key != null) {
+          // when key = 'c', newIndex = 4(in new children)
+          newIndex = keyToNewIndexMap.get(prevChild.key)
+        } else {
+          // key-less node, try to locate a key-less node of the same type
+
+        }
+
+        if (newIndex === undefined) {
+          // remove old node which not in new children
+          unmount(prevChild)
+        } else {
+          newIndexToOldIndexMap[newIndex - s2] = i + 1
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex
+          } else {
+            moved = true
+          }
+          patch(prevChild, c2[newIndex], el, null)
+          patched++
+        }
+      }
+      // 5.3 move and mount
+      // looping backwards so that we can use last patched node as anchor
+    }
+  }
+
+  const patchChildren = (n1, n2, el, anchor) => {
     const c1 = n1.children
     const c2 = n2.children
 
-    const prevShapeFlag = c1.shapeFlag
-    const shapeFlag = c2.shapeFlag
+
+    const prevShapeFlag = n1 ? n1.shapeFlag : 0
+    const shapeFlag = n2.shapeFlag
+
+    /* 新元素是文本 */
+    // 1. 新本文，老的数组，先移除老的
+    // 2. 新文本，老文本/老空，更新文本
+
+    /* 新元素是数组OR空 */
+    // 3. 新数组，老数组，diff
+    // 4. 新空，老数组，移除老的
+
+    // 5. 老文本，先清空文本
+    // 6. 新数组（老空，老文本），挂载
 
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
-      // 新元素是文本 | 老：数组、文本、空
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         unmountChildren(c1)
       }
@@ -130,26 +278,34 @@ export function createRenderer(options) {
       }
     } else {
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        // two arrays, do full diff
+        patchKeyedChildren(c1, c2, el)
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-          // core diff 算法
         } else {
           unmountChildren(c1)
         }
-      } else { }
+      } else {
+        if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+          hostSetElementText(el, '')
+        }
+        if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          mountChildren(c2, el, anchor)
+        }
+      }
     }
   }
 
-  const patchElement = (n1, n2) => {
+  const patchElement = (n1, n2, anchor) => {
     const el = n2.el = n1.el
 
     const oldProps = n1.props || {}
     const newProps = n2.props || {}
 
     patchProps(oldProps, newProps, el)
-    patchChildren(n1, n2, el)
+    patchChildren(n1, n2, el, anchor)
   }
 
-  const patch = (n1, n2, container) => {
+  const patch = (n1, n2, container, anchor = null) => {
     // 初始化 & diff 算法
 
     // 1. 同一个 VNode 不用处理
@@ -163,15 +319,14 @@ export function createRenderer(options) {
 
     if (n1 == null) {
       // mount
-      mountElement(n2, container)
+      mountElement(n2, container, anchor)
     } else {
       // diff 算法 - 前后元素一致
-      patchElement(n1, n2)
+      patchElement(n1, n2, anchor)
     }
   }
 
   const render = (vnode, container) => {
-    debugger
     if (vnode == null) {
       // unmount
       unmount(container._vnode)

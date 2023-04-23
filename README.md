@@ -1066,6 +1066,54 @@ const patchChildren = (n1, n2, el) => {
 | 空  | 文本| 清空文本|
 | 空  | 空  | 不用处理|
 
+**pathchChildren**
+```js
+const patchChildren = (n1, n2, el) => {
+  const c1 = n1.children
+  const c2 = n2.children
+
+
+  const prevShapeFlag = n1 ? n1.shapeFlag : 0
+  const shapeFlag = n2.shapeFlag
+
+  /* 新元素是文本 */
+  // 1. 新本文，老的数组，先移除老的
+  // 2. 新文本，老文本/老空，更新文本
+
+  /* 新元素是数组OR空 */
+  // 3. 新数组，老数组，diff
+  // 4. 新空，老数组，移除老的
+
+  // 5. 老文本，先清空文本
+  // 6. 新数组（老空，老文本），挂载
+
+  if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+    if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      unmountChildren(c1)
+    }
+    if (c1 !== c2) {
+      hostSetElementText(el, c2)
+    }
+  } else {
+    if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      // two arrays, do full diff
+      patchKeyedChildren(c1, c2, el)
+      if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      } else {
+        unmountChildren(c1)
+      }
+    } else {
+      if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+        hostSetElementText(el, '')
+      }
+      if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        mountChildren(c2, el)
+      }
+    }
+  }
+}
+```
+
 
 ### 最长递增子序列
 

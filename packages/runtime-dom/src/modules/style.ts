@@ -8,7 +8,7 @@ export function patchStyle(el: Element, prev, next) {
 
   // remove previous style which not in next style
   for (const key in prev) {
-    if (next[key] == null) {
+    if (next == null || next[key] == null) {
       style[key] = null
     }
   }
