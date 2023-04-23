@@ -12,9 +12,10 @@
     // import { createRenderer, h } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
     import { render, h, createRenderer } from './index.js'
 
-    const vnode = h('h1', {} , 'hello world')
-    render(vnode, app)
-    setTimeout(() => render(null, app), 1000);
+    const n1 = h('h1', {} , 'hello world')
+    const n2 = h('h1', { style: {color: 'red' } }, 'hello world')
+    render(n1, app)
+    render(n2, app)
   </script>
 </body>
 </html> 

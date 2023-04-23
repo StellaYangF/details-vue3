@@ -3,7 +3,7 @@
 // 位运算比运算快，常见三种
 // << 左移运算符（二进制补位0，后边数字移动位数）
 
-import { isArray, isObject, isString } from "@vue/shared"
+import { EMPTY_OBJ, isArray, isObject, isString } from "@vue/shared"
 import { renderOptions } from "@vue/runtime-dom"
 
 // >> 右移
@@ -83,7 +83,29 @@ export function createRenderer(options) {
     hostRemove(vnode.el)
   }
 
-  const patchProp = (oldProps, newProps) => { }
+  const patchProps = (oldProps, newProps, el) => {
+    // 1. 前后属性不一致，才会处理
+    if (oldProps !== newProps) {
+      // 2. 老的有值，新的没有，移除
+      if (oldProps !== EMPTY_OBJ) {
+        for (const key in oldProps) {
+          // 2.1 老的有，新的无
+          if (!(key in newProps)) {
+            hostPatchProp(el, key, oldProps[key], null)
+          }
+        }
+      }
+
+      // 3. 遍历新的，新老比对
+      for (const key in newProps) {
+        const next = newProps[key]
+        const prev = oldProps[key]
+
+        hostPatchProp(el, key, prev, next)
+      }
+
+    }
+  }
 
   const unmountChildren = children => {
     for (let i = 0; i < children.length; i++) {
@@ -98,9 +120,9 @@ export function createRenderer(options) {
     const prevShapeFlag = c1.shapeFlag
     const shapeFlag = c2.shapeFlag
 
-    if (shapeFlag & shapeFlag.TEXT_CHILDREN) {
+    if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
       // 新元素是文本 | 老：数组、文本、空
-      if (prevShapeFlag & shapeFlag.ARRAY_CHILDREN) {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         unmountChildren(c1)
       }
       if (c1 !== c2) {
@@ -123,7 +145,7 @@ export function createRenderer(options) {
     const oldProps = n1.props || {}
     const newProps = n2.props || {}
 
-    patchProp(oldProps, newProps)
+    patchProps(oldProps, newProps, el)
     patchChildren(n1, n2, el)
   }
 
@@ -149,6 +171,7 @@ export function createRenderer(options) {
   }
 
   const render = (vnode, container) => {
+    debugger
     if (vnode == null) {
       // unmount
       unmount(container._vnode)

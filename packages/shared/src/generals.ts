@@ -12,3 +12,5 @@ const onRE = /^on[^a-z]/
 export const isOn = (key: string) => onRE.test(key)
 
 export const isString = (val: unknown): val is string => typeof val === 'string'
+
+export const EMPTY_OBJ: { readonly [key: string]: any } = {}

@@ -6,6 +6,7 @@ var isArray = Array.isArray;
 var onRE = /^on[^a-z]/;
 var isOn = (key) => onRE.test(key);
 var isString = (val) => typeof val === "string";
+var EMPTY_OBJ = {};
 
 // packages/runtime-dom/src/nodeOps.ts
 var doc = typeof document !== "undefined" ? document : null;
@@ -158,7 +159,21 @@ function createRenderer(options) {
   const unmount = (vnode) => {
     hostRemove(vnode.el);
   };
-  const patchProp2 = (oldProps, newProps) => {
+  const patchProps = (oldProps, newProps, el) => {
+    if (oldProps !== newProps) {
+      if (oldProps !== EMPTY_OBJ) {
+        for (const key in oldProps) {
+          if (!(key in newProps)) {
+            hostPatchProp(el, key, oldProps[key], null);
+          }
+        }
+      }
+      for (const key in newProps) {
+        const next = newProps[key];
+        const prev = oldProps[key];
+        hostPatchProp(el, key, prev, next);
+      }
+    }
   };
   const unmountChildren = (children) => {
     for (let i = 0; i < children.length; i++) {
@@ -170,8 +185,8 @@ function createRenderer(options) {
     const c2 = n2.children;
     const prevShapeFlag = c1.shapeFlag;
     const shapeFlag = c2.shapeFlag;
-    if (shapeFlag & shapeFlag.TEXT_CHILDREN) {
-      if (prevShapeFlag & shapeFlag.ARRAY_CHILDREN) {
+    if (shapeFlag & 8 /* TEXT_CHILDREN */) {
+      if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
         unmountChildren(c1);
       }
       if (c1 !== c2) {
@@ -191,7 +206,7 @@ function createRenderer(options) {
     const el = n2.el = n1.el;
     const oldProps = n1.props || {};
     const newProps = n2.props || {};
-    patchProp2(oldProps, newProps);
+    patchProps(oldProps, newProps, el);
     patchChildren(n1, n2, el);
   };
   const patch = (n1, n2, container) => {
@@ -208,6 +223,7 @@ function createRenderer(options) {
     }
   };
   const render2 = (vnode, container) => {
+    debugger;
     if (vnode == null) {
       unmount(container._vnode);
     } else {
