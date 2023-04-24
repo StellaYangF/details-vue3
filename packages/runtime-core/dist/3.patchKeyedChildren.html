@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>runtime-core patch children</title>
+  <title>runtime-core patchKeyedChildren</title>
   <style>
     #app {
      padding: 30px;
@@ -12,20 +12,28 @@
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <div id="app">hello</div>
   <script type="module">
-    // import { createRenderer, h } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
     import { render, h, createRenderer } from './index.js'
 
     const n1 = h('div', {} , [
       h('h3', {key: 'a' }, 'a'),
       h('h3', {key: 'b' }, 'b'),
+      h('h3', {key: 'c' }, 'c'),
+      h('h3', {key: 'd' }, 'd'),
+      h('h3', {key: 'e' }, 'e'),
+      h('h3', {key: 'f' }, 'f'),
+      h('h3', {key: 'g' }, 'g'),
     ])
     const n2 = h('div', { style: {color: 'red' } }, [
       h('h3', {key: 'a' }, 'a'),
       h('h3', {key: 'b' }, 'b'),
-      h('h3', {key: 'c' }, 'c'),
-      h('h3', {key: 'd' }, 'd'),
+      h('h3', {key: 'ee' }, 'ee'),
+      h('h3', {key: 'dd' }, 'dd'),
+      h('h3', {key: 'cc' }, 'cc'),
+      h('h3', {key: 'h' }, 'h'),
+      h('h3', {key: 'f' }, 'f'),
+      h('h3', {key: 'g' }, 'g'),
     ])
     render(n1, app)
     setTimeout(() => render(n2, app), 1000)

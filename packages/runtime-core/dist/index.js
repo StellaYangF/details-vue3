@@ -12,7 +12,7 @@ var EMPTY_OBJ = {};
 var doc = typeof document !== "undefined" ? document : null;
 var nodeOps = {
   insert: (child, parent, anchor) => {
-    parent.appendChild(child);
+    parent.insertBefore(child, anchor || null);
   },
   remove: (child) => {
     const parent = child.parentNode;
@@ -233,11 +233,7 @@ function createRenderer(options) {
       let j;
       let patched = 0;
       const toBePatched = e2 - s2 + 1;
-      let moved = false;
-      let maxNewIndexSoFar = 0;
-      const newIndexToOldIndexMap = new Array(toBePatched);
-      for (i = 0; i < toBePatched; i++)
-        newIndexToOldIndexMap[i] = 0;
+      const newIndexToOldIndexMap = new Array(toBePatched).fill(0);
       for (i = s1; i <= e1; i++) {
         const prevChild = c1[i];
         if (patched >= toBePatched) {
@@ -245,21 +241,23 @@ function createRenderer(options) {
           continue;
         }
         let newIndex;
-        if (prevChild.key != null) {
-          newIndex = keyToNewIndexMap.get(prevChild.key);
-        } else {
-        }
+        newIndex = keyToNewIndexMap.get(prevChild == null ? void 0 : prevChild.key);
         if (newIndex === void 0) {
           unmount(prevChild);
         } else {
           newIndexToOldIndexMap[newIndex - s2] = i + 1;
-          if (newIndex >= maxNewIndexSoFar) {
-            maxNewIndexSoFar = newIndex;
-          } else {
-            moved = true;
-          }
           patch(prevChild, c2[newIndex], el, null);
           patched++;
+        }
+      }
+      for (let i2 = toBePatched; i2 > 0; i2--) {
+        const nextIndex = s2 + i2;
+        const nextChild = c2[nextIndex];
+        const anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null;
+        if (newIndexToOldIndexMap[i2] == 0) {
+          patch(null, nextChild, el, anchor);
+        } else {
+          hostInsert(nextChild.el, el, anchor);
         }
       }
     }
@@ -278,8 +276,8 @@ function createRenderer(options) {
       }
     } else {
       if (prevShapeFlag & 16 /* ARRAY_CHILDREN */) {
-        patchKeyedChildren(c1, c2, el);
         if (shapeFlag & 16 /* ARRAY_CHILDREN */) {
+          patchKeyedChildren(c1, c2, el);
         } else {
           unmountChildren(c1);
         }

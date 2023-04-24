@@ -195,7 +195,7 @@ export function createRenderer(options) {
       for (i = s2; i <= e2; i++) {
         const nextChild = c2[i]
         if (nextChild.key != null) {
-          keyToNewIndexMap.set(nextChild.key, i)
+          keyToNewIndexMap.set(nextChild.key, i) // { e: 2, d: 3, c: 4, h: 5 }
         }
       }
 
@@ -203,17 +203,11 @@ export function createRenderer(options) {
       // matching nodes & remove nodes that are no longer present
       let j
       let patched = 0
-      const toBePatched = e2 - s2 + 1
-      let moved = false
-      // usedto track whether any node has moved
-      let maxNewIndexSoFar = 0
-      // works as Map<newIndex, oldIndex>
-      // Note that oldIndex is offset by +1
-      // and oldIndex = 0 is a special value indicating the new node has
-      // no corresponding old node.
-      // used for determining longest stable subsequence
-      const newIndexToOldIndexMap = new Array(toBePatched)
-      for (i = 0; i < toBePatched; i++) newIndexToOldIndexMap[i] = 0
+      const toBePatched = e2 - s2 + 1 // 需要被 patch 的个数，供后续 newIndexToOldIndexMap 初始化用
+      // used to track whether any node has moved
+      // 即最长递增子序列，0 表示新增的，在标记下标时注意区分（+1）
+      const newIndexToOldIndexMap = new Array(toBePatched).fill(0)
+      // for (i = 0; i < toBePatched; i++) newIndexToOldIndexMap[i] = 0
 
       for (i = s1; i <= e1; i++) {
         const prevChild = c1[i]
@@ -223,30 +217,34 @@ export function createRenderer(options) {
           continue
         }
         let newIndex
-        if (prevChild.key != null) {
-          // when key = 'c', newIndex = 4(in new children)
-          newIndex = keyToNewIndexMap.get(prevChild.key)
-        } else {
-          // key-less node, try to locate a key-less node of the same type
-
-        }
+        newIndex = keyToNewIndexMap.get(prevChild?.key)
 
         if (newIndex === undefined) {
-          // remove old node which not in new children
-          unmount(prevChild)
+          unmount(prevChild) // 新的有，老的无，移除
         } else {
+          // 新元素对应老元素的索引值 + 1，（+1是为了区分新增值如h ）
+          // [e, d, c, h] -> 初始态[0, 0, 0, 0] -> 在老数组中对应的下标 [4 + 1, 3 + 1, 2 + 1, 0]
           newIndexToOldIndexMap[newIndex - s2] = i + 1
-          if (newIndex >= maxNewIndexSoFar) {
-            maxNewIndexSoFar = newIndex
-          } else {
-            moved = true
-          }
           patch(prevChild, c2[newIndex], el, null)
           patched++
         }
       }
       // 5.3 move and mount
       // looping backwards so that we can use last patched node as anchor
+
+      // 实现一：直接倒序插入，这样性能不太好，如果有增续，可以不变，乱序追加即可
+      for (let i = toBePatched; i > 0; i--) {
+        const nextIndex = s2 + i
+        const nextChild = c2[nextIndex]
+        const anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null
+        if (newIndexToOldIndexMap[i] == 0) {
+          patch(null, nextChild, el, anchor)
+        } else {
+          hostInsert(nextChild.el, el, anchor)
+        }
+      }
+
+      // 实现二：
     }
   }
 
@@ -279,8 +277,8 @@ export function createRenderer(options) {
     } else {
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         // two arrays, do full diff
-        patchKeyedChildren(c1, c2, el)
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          patchKeyedChildren(c1, c2, el)
         } else {
           unmountChildren(c1)
         }

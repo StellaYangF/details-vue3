@@ -9,7 +9,6 @@
 
 
 function getSequence(arr) {
-  debugger
   const len = arr.length;
   const result = [0]; // 索引  递增的序列 用二分查找性能高
   const p = arr.slice(0); // 里面内容无所谓 和 原本的数组相同 用来存放索引
@@ -35,7 +34,7 @@ function getSequence(arr) {
           start = middle + 1
         } else {
           end = middle
-        }
+        } // 找到结果集中，比当前这一项大的数
       }
       // start / end 就是找到的位置
       if (arrI < arr[result[start]]) { // 如果相同 或者 比当前的还大就不换了
@@ -55,7 +54,7 @@ function getSequence(arr) {
   return result;
 }
 
-const arr = [9, 2, 3, 1, 5, 6, 8, 7, 4]
+const arr = [2, 3, 1, 5, 6, 8, 7, 9, 4] // [1, 3, 5]/[2, 1, 3] <- 6, i = 4
 // 2                                 result值，只有追加的时候，记住前一个值的索引
 // 2 3 (取1, 2 > 1, 2替换为1)           [0]
 // 1 3                                  [0]
@@ -65,25 +64,25 @@ const arr = [9, 2, 3, 1, 5, 6, 8, 7, 4]
 // 1 3 5 6 7                            [4]
 // 1 3 5 6 7 9                          [6]
 // 1 3 4 6 7 9                          [1]
-console.log(getSequence(arr)) // 索引列表[0,1,3,4,6,7] -> 对应数组[2,3,5,6,7,9]
+// console.log(getSequence(arr)) // 索引列表[0,1,3,4,6,7] -> 对应数组[2,3,5,6,7,9]
 
 
-// function getSeq(arr) {
+function getSeq(arr) {
 
-//   const result = [0]
-//   const len = arr.length
-//   let resultLastIndex
+  const result = [0]
+  const len = arr.length
+  let resultLastIndex
 
-//   for (let i = 0; i < len; i++) {
-//     const arrI = arr[i]
-//     if (arrI !== 0) {
-//       resultLastIndex = result[result.length - 1]
-//       if (arrI > arr[resultLastIndex]) {
-//         result.push(i)
-//         continue
-//       }
-//     }
-//   }
-//   return result
-// }
-// console.log(getSeq(arr))
+  for (let i = 0; i < len; i++) {
+    const arrI = arr[i]
+    if (arrI !== 0) {
+      resultLastIndex = result[result.length - 1]
+      if (arrI > arr[resultLastIndex]) {
+        result.push(i)
+        continue
+      }
+    }
+  }
+  return result
+}
+console.log(getSeq(arr))
