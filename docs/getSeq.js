@@ -51,7 +51,7 @@ function getSequence(arr) {
     result[i] = last // 最后一项肯定是正确的
     last = p[last]
   }
-  return result;
+  return [result, p];
 }
 
 const arr = [2, 3, 1, 5, 6, 8, 7, 9, 4] // [1, 3, 5]/[2, 1, 3] <- 6, i = 4
@@ -64,25 +64,25 @@ const arr = [2, 3, 1, 5, 6, 8, 7, 9, 4] // [1, 3, 5]/[2, 1, 3] <- 6, i = 4
 // 1 3 5 6 7                            [4]
 // 1 3 5 6 7 9                          [6]
 // 1 3 4 6 7 9                          [1]
-// console.log(getSequence(arr)) // 索引列表[0,1,3,4,6,7] -> 对应数组[2,3,5,6,7,9]
+console.log(getSequence(arr)) // 索引列表[0,1,3,4,6,7] -> 对应数组[2,3,5,6,7,9]
 
 
-function getSeq(arr) {
+// function getSeq(arr) {
 
-  const result = [0]
-  const len = arr.length
-  let resultLastIndex
+//   const result = [0]
+//   const len = arr.length
+//   let resultLastIndex
 
-  for (let i = 0; i < len; i++) {
-    const arrI = arr[i]
-    if (arrI !== 0) {
-      resultLastIndex = result[result.length - 1]
-      if (arrI > arr[resultLastIndex]) {
-        result.push(i)
-        continue
-      }
-    }
-  }
-  return result
-}
-console.log(getSeq(arr))
+//   for (let i = 0; i < len; i++) {
+//     const arrI = arr[i]
+//     if (arrI !== 0) {
+//       resultLastIndex = result[result.length - 1]
+//       if (arrI > arr[resultLastIndex]) {
+//         result.push(i)
+//         continue
+//       }
+//     }
+//   }
+//   return result
+// }
+// console.log(getSeq(arr))

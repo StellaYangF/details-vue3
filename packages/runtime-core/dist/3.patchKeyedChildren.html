@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <div id="app">hello</div>
+  <div id="app"></div>
   <script type="module">
     import { render, h, createRenderer } from './index.js'
 
@@ -28,9 +28,9 @@
     const n2 = h('div', { style: {color: 'red' } }, [
       h('h3', {key: 'a' }, 'a'),
       h('h3', {key: 'b' }, 'b'),
-      h('h3', {key: 'ee' }, 'ee'),
-      h('h3', {key: 'dd' }, 'dd'),
-      h('h3', {key: 'cc' }, 'cc'),
+      h('h3', {key: 'e' }, 'e'),
+      h('h3', {key: 'c' }, 'c'),
+      h('h3', {key: 'd' }, 'd'),
       h('h3', {key: 'h' }, 'h'),
       h('h3', {key: 'f' }, 'f'),
       h('h3', {key: 'g' }, 'g'),

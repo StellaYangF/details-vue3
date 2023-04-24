@@ -250,14 +250,21 @@ function createRenderer(options) {
           patched++;
         }
       }
-      for (let i2 = toBePatched; i2 > 0; i2--) {
-        const nextIndex = s2 + i2;
-        const nextChild = c2[nextIndex];
-        const anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null;
-        if (newIndexToOldIndexMap[i2] == 0) {
-          patch(null, nextChild, el, anchor);
+      const increasingNewIndexSequence = getSequence(newIndexToOldIndexMap);
+      console.log(increasingNewIndexSequence);
+      j = increasingNewIndexSequence.length - 1;
+      for (i = toBePatched - 1; i >= 0; i--) {
+        let currentIndex = i + s2;
+        let child = c2[currentIndex];
+        let anchor = currentIndex + 1 < c2.length ? c2[currentIndex + 1].el : null;
+        if (newIndexToOldIndexMap[i] == 0) {
+          patch(null, child, el, anchor);
         } else {
-          hostInsert(nextChild.el, el, anchor);
+          if (i != increasingNewIndexSequence[j]) {
+            hostInsert(child.el, el, anchor);
+          } else {
+            j--;
+          }
         }
       }
     }
@@ -372,6 +379,46 @@ function h(type, propsOrChildren, children) {
     }
     return createVNode(type, propsOrChildren, children);
   }
+}
+function getSequence(arr) {
+  const p = arr.slice();
+  const result = [0];
+  let i, j, u, v, c;
+  const len = arr.length;
+  for (i = 0; i < len; i++) {
+    const arrI = arr[i];
+    if (arrI !== 0) {
+      j = result[result.length - 1];
+      if (arrI > arr[j]) {
+        p[i] = j;
+        result.push();
+        continue;
+      }
+      u = 0;
+      v = result.length - 1;
+      while (u < v) {
+        c = u + v >> 1;
+        if (arrI > arr[result[c]]) {
+          u = c + 1;
+        } else {
+          v = c;
+        }
+      }
+      if (arrI < arr[result[u]]) {
+        if (u > 0) {
+          p[i] = result[u - 1];
+        }
+        result[u] = i;
+      }
+    }
+  }
+  u = result.length;
+  v = result[u - 1];
+  while (u-- > 0) {
+    result[u] = v;
+    v = p[v];
+  }
+  return result;
 }
 export {
   ShapeFlags,

@@ -233,18 +233,36 @@ export function createRenderer(options) {
       // looping backwards so that we can use last patched node as anchor
 
       // 实现一：直接倒序插入，这样性能不太好，如果有增续，可以不变，乱序追加即可
-      for (let i = toBePatched; i > 0; i--) {
-        const nextIndex = s2 + i
-        const nextChild = c2[nextIndex]
-        const anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null
+      // for (let i = toBePatched; i > 0; i--) {
+      //   const nextIndex = s2 + i
+      //   const nextChild = c2[nextIndex]
+      //   const anchor = nextIndex + 1 < c2.length ? c2[nextIndex + 1].el : null
+      //   if (newIndexToOldIndexMap[i] == 0) {
+      //     patch(null, nextChild, el, anchor)
+      //   } else {
+      //     hostInsert(nextChild.el, el, anchor)
+      //   }
+      // }
+
+      // 实现二：最长递增子序列 [5, 4, 3, 0]
+      const increasingNewIndexSequence = getSequence(newIndexToOldIndexMap);
+      console.log(increasingNewIndexSequence)
+      j = increasingNewIndexSequence.length - 1;
+      for (i = toBePatched - 1; i >= 0; i--) {
+        let currentIndex = i + s2; // 找到h的索引
+        let child = c2[currentIndex]; // 找到h对应的节点
+        let anchor = currentIndex + 1 < c2.length ? c2[currentIndex + 1].el : null; // 第一次插入h 后 h是一个虚拟节点
         if (newIndexToOldIndexMap[i] == 0) {
-          patch(null, nextChild, el, anchor)
+          // 新增节点
+          patch(null, child, el, anchor)
         } else {
-          hostInsert(nextChild.el, el, anchor)
+          if (i != increasingNewIndexSequence[j]) {
+            hostInsert(child.el, el, anchor); // 操作当前的d 以d下一个作为参照物插入
+          } else {
+            j--; // 跳过不需要移动的元素， 为了减少移动操作 需要这个最长递增子序列算法  
+          }
         }
       }
-
-      // 实现二：
     }
   }
 
@@ -406,3 +424,58 @@ export function h(type, propsOrChildren?, children?) {
     return createVNode(type, propsOrChildren, children)
   }
 }
+
+// https://en.wikipedia.org/wiki/Longest_increasing_subsequence
+function getSequence(arr: number[]): number[] {
+  const p = arr.slice()
+  // 类似数组副本，存放每一项比其大的那个值对应的下标
+  // 如：[1,2,3,] p -> [1, 0, 1] 第一项由于没人和他比对，还是他自己
+  const result = [0]
+  // 存放追加值前面的索引，贪心算法
+
+  let i, j, u, v, c
+  const len = arr.length
+
+  for (i = 0; i < len; i++) {
+    const arrI = arr[i]
+    // 0 表示新增元素，不处理
+    if (arrI !== 0) {
+      j = result[result.length - 1]
+      // 1. 当前元素>取出的最大元素，追加入result，并记录下标
+      if (arrI > arr[j]) {
+        p[i] = j
+        result.push()
+        continue
+      }
+
+      // 二分查找
+      u = 0
+      v = result.length - 1
+      while (u < v) {
+        c = (u + v) >> 1 // 取中间值
+        if (arrI > arr[result[c]]) {
+          u = c + 1
+        } else {
+          v = c
+        }
+      }
+      // 找到中间值
+      if (arrI < arr[result[u]]) {
+        if (u > 0) {
+          p[i] = result[u - 1] // 记录前一项
+        }
+        result[u] = i
+      }
+    }
+  }
+  // 前驱子节点追溯，倒序查找
+  u = result.length
+  v = result[u - 1]
+  while (u-- > 0) {
+    result[u] = v
+    v = p[v]
+  }
+  return result
+}
+
+// 如：[2, 3, 1, 4, 5] -> []
