@@ -1375,7 +1375,156 @@ function getSequence(arr: number[]): number[] {
  */
 ```
 
+## 组件渲染原理
 
+### Text, Fragment 渲染
+
+除 VNode 之外，Vue3 中还有很多其他类型的虚拟节点，如：Text, Fragment
+
+```js
+export const Text = Symbol.for('v-text')
+export const Fragment = Symbol.for('v-fgt') as any as {
+  __isFragment: true,
+  new(): {
+    $props: any
+  }
+}
+```
+
+### 文本
+
+```js
+const patch = (n1, n2, container, anchor = null) => {
+  // 初始化 & diff 算法
+
+  // 1. 同一个 VNode 不用处理
+  if (n1 === n2) return
+
+  // 2. 两元素不同，卸载老的 VNode
+  if (n1 && !isSameVNodeType(n1, n2)) {
+    unmount(n1)
+    n1 = null
+  }
+
+  const { type, shapeFlag } = n2
+  switch (type) {
+    case Text:
+      processText(n1, n2, container, anchor)
+      break
+    case Fragment:
+      processFragment(n1, n2, container, anchor)
+      break
+    default:
+      if (shapeFlag & ShapeFlags.ELEMENT) {
+        processElement(n1, n2, container, anchor)
+      } else if (shapeFlag & ShapeFlags.COMPOENNT) {
+        processComponent(n1, n2, container, anchor)
+      }
+  }
+}
+```
+
+```js
+render(h(Text, 'Hello'), document.getElementById('app'))
+```
+
+```js
+const processText = (n1, n2, container, anchor) => {
+  if (n1 === null) {
+    hostInsert(
+      n2.el = hostCreateText(n2.children as string),
+      container,
+      anchor)
+  } else {
+    const el = (n2.el = n1.el!)
+    if (n2.children !== n1.children) {
+      hostSetText(el, n2.children as string)
+    }
+  }
+}
+```
+
+### Fragment
+为了让 Vue3 支持**多根节点**模板，Vue.js 提供 Fragment 来实现，核心就是一个**无意义的标签包裹多个节点**。
+
+```js
+render(h(Fragment, [h('span', 'Hello'), h('span', ' Stella')]), document.getElementById('app'))
+```
+
+```js
+const processFragment = (n1,n2,container)=>{
+    if(n1 == null){ 
+        mountChildren(n2.children,container);
+    }else{
+        patchChildren(n1,n2,container);
+    }
+}
+```
+
+**卸载元素时，特殊处理下 fragment，删除其子元素**
+```js
+const unmount = vnode => {
+  if (vnode.type === Fragment) {
+    unmountChildren(vnode.children)
+  } else {
+    hostRemove(vnode.el)
+  }
+}
+```
+
+```js
+const unmountChildren = children => {
+  for (let i = 0; i < children.length; i++) {
+    unmount(children[i])
+  }
+}
+```
+
+### 组件渲染
+组件需要提供一个 render 函数，渲染函数需要返回虚拟 DOM
+
+```js
+const VueComponent = {
+  data() {
+    return { name: 'Stella' }
+  },
+  render() {
+    return h('p', [h('div'), `Hello, I'm ${this.name}.`, h('div', `I love coding and dancing.`)])
+  },
+  
+}
+
+render(h(VueComponent), app)
+```
+
+**添加组件类型**
+h 方法中传入一个对象说明要渲染的是一个组件。（后续还有其他可能）
+
+**组件渲染**
+
+**组件异步渲染**
+
+**组件Props、Attrs 实现**
+
+
+**initProps**
+
+
+**componentProps.ts**
+
+
+**属性代理**
+
+**组件流程整合**
+
+**1）创建组件实例**
+
+
+**2）设置组件属性**
+
+**3）渲染effect**
+
+**属性更新**
 ## 补充
 
 ### 位运算符 

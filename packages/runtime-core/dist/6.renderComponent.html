@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core render component</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { createRenderer, h, render } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+
+    // import { render, h, createRenderer, Text, Fragment } from './index.js'
+
+    const VueComponent = {
+      data() {
+        return { name: 'Stella' }
+      },
+      render() {
+        return h('p', [h('div'), `Hello, I'm ${this.name}.`, h('div', `I love coding and dancing.`)])
+      },
+      
+    }
+
+    render(h(VueComponent), app)
+    
+</script>
+</body>
+</html> 

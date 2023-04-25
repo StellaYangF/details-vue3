@@ -104,6 +104,10 @@ function patchProp(el, key, prevValue, nextValue) {
 // packages/runtime-dom/src/index.ts
 var renderOptions = Object.assign({ patchProp }, nodeOps);
 
+// packages/runtime-core/src/vnode.ts
+var Text = Symbol.for("v-text");
+var Fragment = Symbol.for("v-fgt");
+
 // packages/runtime-core/src/renderer.ts
 var ShapeFlags = /* @__PURE__ */ ((ShapeFlags2) => {
   ShapeFlags2[ShapeFlags2["ELEMENT"] = 1] = "ELEMENT";
@@ -157,7 +161,11 @@ function createRenderer(options) {
     }
   };
   const unmount = (vnode) => {
-    hostRemove(vnode.el);
+    if (vnode.type === Fragment) {
+      unmountChildren(vnode.children);
+    } else {
+      hostRemove(vnode.el);
+    }
   };
   const patchProps = (oldProps, newProps, el) => {
     if (oldProps !== newProps) {
@@ -177,7 +185,7 @@ function createRenderer(options) {
   };
   const unmountChildren = (children) => {
     for (let i = 0; i < children.length; i++) {
-      hostRemove(children[i]);
+      unmount(children[i]);
     }
   };
   const patchKeyedChildren = (c1, c2, el) => {
@@ -298,12 +306,12 @@ function createRenderer(options) {
       }
     }
   };
-  const patchElement = (n1, n2, anchor) => {
+  const patchElement = (n1, n2) => {
     const el = n2.el = n1.el;
     const oldProps = n1.props || {};
     const newProps = n2.props || {};
     patchProps(oldProps, newProps, el);
-    patchChildren(n1, n2, el, anchor);
+    patchChildren(n1, n2, el, null);
   };
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2)
@@ -312,11 +320,51 @@ function createRenderer(options) {
       unmount(n1);
       n1 = null;
     }
-    if (n1 == null) {
+    const { type, shapeFlag } = n2;
+    switch (type) {
+      case Text:
+        processText(n1, n2, container, anchor);
+        break;
+      case Fragment:
+        processFragment(n1, n2, container, anchor);
+        break;
+      default:
+        if (shapeFlag & 1 /* ELEMENT */) {
+          processElement(n1, n2, container, anchor);
+        } else if (shapeFlag & 6 /* COMPOENNT */) {
+          processComponent(n1, n2, container, anchor);
+        }
+    }
+  };
+  const processText = (n1, n2, container, anchor) => {
+    if (n1 === null) {
+      hostInsert(
+        n2.el = hostCreateText(n2.children),
+        container,
+        anchor
+      );
+    } else {
+      const el = n2.el = n1.el;
+      if (n2.children !== n1.children) {
+        hostSetText(el, n2.children);
+      }
+    }
+  };
+  const processFragment = (n1, n2, container, anchor) => {
+    if (n1 === null) {
+      mountChildren(n2.children, container, anchor);
+    } else {
+      patchChildren(n1, n2, container, anchor);
+    }
+  };
+  const processElement = (n1, n2, container, anchor) => {
+    if (n1 === null) {
       mountElement(n2, container, anchor);
     } else {
-      patchElement(n1, n2, anchor);
+      patchElement(n1, n2);
     }
+  };
+  const processComponent = (n1, n2, container, anchor) => {
   };
   const render2 = (vnode, container) => {
     if (vnode == null) {
@@ -421,7 +469,9 @@ function getSequence(arr) {
   return result;
 }
 export {
+  Fragment,
   ShapeFlags,
+  Text,
   createRenderer,
   createVNode,
   h,
