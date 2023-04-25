@@ -55,34 +55,35 @@ function getSequence(arr) {
 }
 
 const arr = [2, 3, 1, 5, 6, 8, 7, 9, 4] // [1, 3, 5]/[2, 1, 3] <- 6, i = 4
-// 2                                 result值，只有追加的时候，记住前一个值的索引
+// 2                                 result值
 // 2 3 (取1, 2 > 1, 2替换为1)           [0]
 // 1 3                                  [0]
-// 1 3 5                                [1]
-// 1 3 5 6                              [3]
-// 1 3 5 6 8                            [4]
-// 1 3 5 6 7                            [4]
-// 1 3 5 6 7 9                          [6]
-// 1 3 4 6 7 9                          [1]
-console.log(getSequence(arr)) // 索引列表[0,1,3,4,6,7] -> 对应数组[2,3,5,6,7,9]
+// 1 3 5                                [0, 1]
+// 1 3 5 6                              [0, 1, 3]
+// 1 3 5 6 8                            [0, 1, 3, 4]
+// 1 3 5 6 7                            [0, 1, 3, 4]
+// 1 3 5 6 7 9                          [0, 1, 3, 4, 6]
+// 1 3 4 6 7 9                          [0, 1, 3, 4, 6]
+// 最后9对应的索引7一定是最大的，加上    [0, 1, 3, 4, 6, 7]
+console.log(getSequence(arr)) // 索引列表[0, 1, 3, 4, 6, 7] -> 对应数组[2,3,5,6,7,9]
 
 
-// function getSeq(arr) {
+function getSeq(arr) {
 
-//   const result = [0]
-//   const len = arr.length
-//   let resultLastIndex
+  const result = [0]
+  const len = arr.length
+  let resultLastIndex
 
-//   for (let i = 0; i < len; i++) {
-//     const arrI = arr[i]
-//     if (arrI !== 0) {
-//       resultLastIndex = result[result.length - 1]
-//       if (arrI > arr[resultLastIndex]) {
-//         result.push(i)
-//         continue
-//       }
-//     }
-//   }
-//   return result
-// }
-// console.log(getSeq(arr))
+  for (let i = 0; i < len; i++) {
+    const arrI = arr[i]
+    if (arrI !== 0) {
+      resultLastIndex = result[result.length - 1]
+      if (arrI > arr[resultLastIndex]) {
+        result.push(i)
+        continue
+      }
+    }
+  }
+  return result
+}
+console.log(getSeq(arr))

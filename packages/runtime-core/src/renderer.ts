@@ -427,6 +427,8 @@ export function h(type, propsOrChildren?, children?) {
 }
 
 // https://en.wikipedia.org/wiki/Longest_increasing_subsequence
+// 最长递增子序列
+// 二分查找 + 贪心算法
 function getSequence(arr: number[]): number[] {
   const p = arr.slice()
   // 类似数组副本，存放每一项比其大的那个值对应的下标
@@ -449,7 +451,7 @@ function getSequence(arr: number[]): number[] {
         continue
       }
 
-      // 二分查找
+      // 2. 二分查找，第一个比arrI大的值
       u = 0
       v = result.length - 1
       while (u < v) {
@@ -460,7 +462,9 @@ function getSequence(arr: number[]): number[] {
           v = c
         }
       }
-      // 找到中间值
+      // 3. 找到中间值，result 中替换掉，第一个比arrI大的那个值，对应的下标
+      // 同时在 p 中记录，result 中被替换值的前一项。
+      // 贪心算法：最终 p 数组中记录的都是，原数组中每一项第一个比他大的值的下标
       if (arrI < arr[result[u]]) {
         if (u > 0) {
           p[i] = result[u - 1] // 记录前一项
@@ -479,4 +483,28 @@ function getSequence(arr: number[]): number[] {
   return result
 }
 
-// 如：[2, 3, 1, 4, 5] -> []
+/**
+ * 例如：[2, 3, 1, 5, 6, 8, 7, 9, 4]
+ * 输出：[0, 1, 3, 4, 6, 7] 索引值 -> 数值 [2, 3, 5, 6, 9]
+ * O(n log n)
+ * 
+ * 迭代arr流程：
+ * 数值        value  下标  操作result                操作p
+ * 2             2    0     无   [0]                    [2, 3, 1, 5, 6, 8, 7, 9, 4]
+ * 2 3           3    1     追加 [0, 1]                 [2, 0, 1, 5, 6, 8, 7, 9, 4]
+ * 1 3           1    2     替换2[2, 1]                 [2, 0, 1, 5, 6, 8, 7, 9, 4]
+ * 1 3 5         5    3     追加 [2, 1, 3]              [2, 0, 1, 1, 6, 8, 7, 9, 4]
+ * 1 3 5 6       6    4     追加 [2, 1, 3, 4]           [2, 0, 1, 5, 6, 8, 7, 9, 4] 
+ * 1 3 5 6 8     8    5     追加 [2, 1, 3, 4, 5]        [2, 0, 1, 5, 6, 8, 7, 9, 4]
+ * 1 3 5 6 7     7    6     替换8[2, 1, 3, 4, 6]        [2, 0, 1, 5, 6, 8, 7, 9, 4]
+ * 1 3 5 6 7 9   9    7     追加 [2, 1, 3, 4, 6, 7]     [2, 0, 1, 5, 6, 8, 7, 6, 4]
+ * 1 3 4 6 7 9   4    8     替换5[2, 1, 8, 4, 6, 7]     [2, 0, 1, 5, 6, 8, 7, 6, 1]
+ * 
+ * looping backwards result
+ * 索引：[0, 1, 3, 4, 6, 7]
+ * 数组值：[2, 3, 5, 6, 8, 9]
+ * 
+ * result 存放拿出的索引值
+ * p 用于存放，比其小的那一项索引值。初始值是输入的 arr
+ * 核心：下一项记录前一项中的索引。最后从后往前找
+ */
