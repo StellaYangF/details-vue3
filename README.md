@@ -1483,6 +1483,21 @@ const unmountChildren = children => {
 ### 组件渲染
 组件需要提供一个 render 函数，渲染函数需要返回虚拟 DOM
 
+**方法列表**
+- h => 传入 VueComponent 对象
+  - data: function(){ return {...} }
+  - render: function(): vnode{ return h() }
+- createVNode => type 参数为对象，ShapeFlags.STATEFUL_COMPONENT，返回 vnode
+- render
+- patch => shapeFlag 为 COMPONENT 类型
+- processComponent
+- mountComponent
+- updateComponent
+- createComponentInstance
+- createAppContext
+- setupRenderEffect
+- updateComponentPreRender
+
 ```js
 const VueComponent = {
   data() {
@@ -1499,32 +1514,101 @@ render(h(VueComponent), app)
 
 **添加组件类型**
 h 方法中传入一个对象说明要渲染的是一个组件。（后续还有其他可能）
+```js
+export const createVNode = (type, props, children = null) => {
+const shapeFlag = isString(type)
+  ? ShapeFlags.ELEMENT
+  : isObject(type)
+    ? ShapeFlags.STATEFUL_COMPONENT
+    : 0
+    // ... 稍后可以根据类型来进行组件的挂载
+}
+```
 
 **组件渲染**
+```js
+const processComponent = (n1, n2, container, anchor) => {
+  if (n1 == null) {
+    mountComponent(n2, container, anchor)
+  } else {
+    updateComponent(n1, n2)
+  }
+}
+
+const mountComponent = (initialVNode, container, anchor) => {
+  const instance = (initialVNode.component = createComponentInstance(initialVNode))
+  setupRenderEffect(instance, initialVNode, container, anchor)
+}
+
+const setupRenderEffect = (instance, initialVNode, container, anchor) => {
+  const { render, data = () => { } } = initialVNode.type
+  const state = reactive(data())
+
+  const componentUpdateFn = () => {
+    if (!instance.isMounted) {
+      // render() { return h() }
+      const subTree = render.call(state, state)
+      patch(null, subTree, container, anchor)
+      instance.subTree = subTree
+      instance.isMounted = true
+    } else {
+      const subTree = render.call(state, state)
+      patch(instance.subTree, subTree, container, anchor)
+      instance.subTree = subTree
+    }
+  }
+
+  const effect = (instance.effect = new ReactiveEffect(
+    componentUpdateFn,
+    () => queueJob(update)
+  ))
+
+  const update = instance.update = effect.run.bind(effect)
+
+
+  update()
+}
+```
 
 **组件异步渲染**
+```js
+```
 
 **组件Props、Attrs 实现**
-
+```js
+```
 
 **initProps**
-
+```js
+```
 
 **componentProps.ts**
-
+```js
+```
 
 **属性代理**
+```js
+```
 
 **组件流程整合**
 
+
 **1）创建组件实例**
+```js
+```
 
 
 **2）设置组件属性**
+```js
+```
 
 **3）渲染effect**
+```js
+```
 
 **属性更新**
+```js
+```
 ## 补充
 
 ### 位运算符 

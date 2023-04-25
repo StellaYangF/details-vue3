@@ -15,16 +15,16 @@
 <body>
   <div id="app"></div>
   <script type="module">
-    import { createRenderer, h, render } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    // import { createRenderer, h, render } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
 
-    // import { render, h, createRenderer, Text, Fragment } from './index.js'
+    import { render, h } from './index.js'
 
     const VueComponent = {
       data() {
         return { name: 'Stella' }
       },
       render() {
-        return h('p', [h('div'), `Hello, I'm ${this.name}.`, h('div', `I love coding and dancing.`)])
+        return h('p', [h('div', `Hello, I'm ${this.name}.`), h('div', `I love coding and dancing.`)])
       },
       
     }

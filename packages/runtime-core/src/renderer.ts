@@ -6,6 +6,9 @@
 import { EMPTY_OBJ, isArray, isObject, isString } from "@vue/shared"
 import { renderOptions } from "@vue/runtime-dom"
 import { Fragment, Text } from "./vnode"
+import { createComponentInstance } from "./component"
+import { ReactiveEffect, reactive } from "@vue/reactivity"
+import { queueJob } from "./scheduler"
 
 // >> 右移
 export const enum ShapeFlags {
@@ -15,11 +18,11 @@ export const enum ShapeFlags {
   TEXT_CHILDREN = 1 << 3, // 子元素为文本
   ARRAY_CHILDREN = 1 << 4, // 子元素为数组
   SLOTS_CHILDREN = 1 << 5, // 组件插槽
-  TELTEPORT = 1 << 6, // 传送门组件
+  TELEPORT = 1 << 6, // 传送门组件
   SUSPENSE = 1 << 7, // 异步加载组件
   COMPONENT_SHOULD_KEEP_ALIVE = 1 << 8, // keep-alive
   COMPONENT_KEPT_ALIVE = 1 << 9,
-  COMPOENNT = ShapeFlags.STATEFUL_COMPONENT | ShapeFlags.FUNCTION_COMPONENT
+  COMPONENT = ShapeFlags.STATEFUL_COMPONENT | ShapeFlags.FUNCTION_COMPONENT
 }
 
 /**
@@ -350,14 +353,14 @@ export function createRenderer(options) {
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(n1, n2, container, anchor)
-        } else if (shapeFlag & ShapeFlags.COMPOENNT) {
+        } else if (shapeFlag & ShapeFlags.COMPONENT) {
           processComponent(n1, n2, container, anchor)
         }
     }
   }
 
   const processText = (n1, n2, container, anchor) => {
-    if (n1 === null) {
+    if (n1 == null) {
       hostInsert(
         n2.el = hostCreateText(n2.children as string),
         container,
@@ -371,7 +374,7 @@ export function createRenderer(options) {
   }
 
   const processFragment = (n1, n2, container, anchor) => {
-    if (n1 === null) {
+    if (n1 == null) {
       mountChildren(n2.children, container, anchor)
     } else {
       patchChildren(n1, n2, container, anchor)
@@ -379,14 +382,61 @@ export function createRenderer(options) {
   }
 
   const processElement = (n1, n2, container, anchor) => {
-    if (n1 === null) {
+    if (n1 == null) {
       mountElement(n2, container, anchor)
     } else {
       patchElement(n1, n2)
     }
   }
 
-  const processComponent = (n1, n2, container, anchor) => { }
+  const processComponent = (n1, n2, container, anchor) => {
+    if (n1 == null) {
+      mountComponent(n2, container, anchor)
+    } else {
+      updateComponent(n1, n2)
+    }
+  }
+
+  const mountComponent = (initialVNode, container, anchor) => {
+    const instance = (initialVNode.component = createComponentInstance(initialVNode))
+    setupRenderEffect(instance, initialVNode, container, anchor)
+  }
+
+  const setupRenderEffect = (instance, initialVNode, container, anchor) => {
+    const { render, data = () => { } } = initialVNode.type
+    const state = reactive(data())
+
+    const componentUpdateFn = () => {
+      if (!instance.isMounted) {
+        // render() { return h() }
+        // 返回的就是 vnode
+        const subTree = render.call(state, state)
+        patch(null, subTree, container, anchor)
+        instance.subTree = subTree
+        instance.isMounted = true
+      } else {
+        const subTree = render.call(state, state)
+        patch(instance.subTree, subTree, container, anchor)
+        instance.subTree = subTree
+      }
+    }
+
+    const effect = (instance.effect = new ReactiveEffect(
+      componentUpdateFn,
+      () => queueJob(update)
+    ))
+
+    const update = instance.update = effect.run.bind(effect)
+
+
+    update()
+  }
+
+  const updateComponent = (n1, n2) => {
+
+  }
+
+  const updateComponentPreRender = () => { }
 
   const render = (vnode, container) => {
     if (vnode == null) {
@@ -404,11 +454,11 @@ export function createRenderer(options) {
 }
 
 
-export function render(vdnode, container) {
+export function render(vnode, container) {
   // 内置渲染器，会自动传入 DOM api，专门给 vue 使用
   const renderer = createRenderer(renderOptions)
 
-  renderer.render(vdnode, container)
+  renderer.render(vnode, container)
 }
 
 export function isVNode(value) {
@@ -422,7 +472,11 @@ export function isVNode(value) {
  * @returns 
  */
 export const createVNode = (type, props, children = null) => {
-  const shapeFlag = isString(type) ? ShapeFlags.ELEMENT : 0
+  const shapeFlag = isString(type)
+    ? ShapeFlags.ELEMENT
+    : isObject(type)
+      ? ShapeFlags.STATEFUL_COMPONENT
+      : 0
 
   const vnode = {
     __v_isVNode: true,
