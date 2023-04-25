@@ -230,7 +230,6 @@ export function createRenderer(options) {
         }
       }
       // 5.3 move and mount
-      // looping backwards so that we can use last patched node as anchor
 
       // 实现一：直接倒序插入，这样性能不太好，如果有增续，可以不变，乱序追加即可
       // for (let i = toBePatched; i > 0; i--) {
@@ -256,8 +255,10 @@ export function createRenderer(options) {
           // 新增节点
           patch(null, child, el, anchor)
         } else {
-          if (i != increasingNewIndexSequence[j]) {
-            hostInsert(child.el, el, anchor); // 操作当前的d 以d下一个作为参照物插入
+          // 当前元素不在递增序列中
+          // OR 无递增序列，如：reverse
+          if (i != increasingNewIndexSequence[j] || j < 0) {
+            hostInsert(child.el, el, anchor);
           } else {
             j--; // 跳过不需要移动的元素， 为了减少移动操作 需要这个最长递增子序列算法  
           }

@@ -260,7 +260,7 @@ function createRenderer(options) {
         if (newIndexToOldIndexMap[i] == 0) {
           patch(null, child, el, anchor);
         } else {
-          if (i != increasingNewIndexSequence[j]) {
+          if (i != increasingNewIndexSequence[j] || j < 0) {
             hostInsert(child.el, el, anchor);
           } else {
             j--;
