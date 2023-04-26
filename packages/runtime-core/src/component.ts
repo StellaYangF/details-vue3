@@ -13,12 +13,12 @@ export function createComponentInstance(vnode) {
 
   const instance = {
     uid: uid++,
-    vnode,
+    vnode, // 组件的虚拟节点
     type,
     appContext,
     root: null!, // 立即设置
     isMounted: false,
-    subTree: null!, // creation 后同步设置
+    subTree: null!, // 要渲染的子节点
     update: null!, // creation 后同步设置
     // state
     data: EMPTY_OBJ,

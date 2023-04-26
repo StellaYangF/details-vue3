@@ -141,13 +141,14 @@ function createComponentInstance(vnode) {
   const instance = {
     uid: uid++,
     vnode,
+    // 组件的虚拟节点
     type,
     appContext,
     root: null,
     // 立即设置
     isMounted: false,
     subTree: null,
-    // creation 后同步设置
+    // 要渲染的子节点
     update: null,
     // creation 后同步设置
     // state
@@ -294,10 +295,7 @@ function queueJob(job) {
       isFlushing = false;
       const copy = queue.slice();
       queue.length = 0;
-      for (let i = 0; i < queue.length; i++) {
-        let job2 = queue[i];
-        job2();
-      }
+      copy.forEach(job);
       copy.length = 0;
     });
   }
@@ -589,6 +587,7 @@ function createRenderer(options) {
     const effect = instance.effect = new ReactiveEffect(
       componentUpdateFn,
       () => queueJob(update)
+      // 控制 componentUpdateFn 执行时机，可以批处理
     );
     const update = instance.update = effect.run.bind(effect);
     update();

@@ -7,7 +7,7 @@ export class ReactiveEffect {
   public active = true
   // 记录 effect 中使用的属性
   public deps = []
-  constructor(private fn, public scheduler) { }
+  constructor(private fn, public scheduler?) { }
 
   run() {
     try {

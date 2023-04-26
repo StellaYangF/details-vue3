@@ -412,9 +412,12 @@ export function createRenderer(options) {
         // 返回的就是 vnode
         const subTree = render.call(state, state)
         patch(null, subTree, container, anchor)
+        // 方便再次挂载时，前后 vnode 进行比对
         instance.subTree = subTree
+        // 挂载后修改 isMounted 值
         instance.isMounted = true
       } else {
+        // 用户传入的 render 方法可以接收 reactive 返回的代理对象
         const subTree = render.call(state, state)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
@@ -423,7 +426,7 @@ export function createRenderer(options) {
 
     const effect = (instance.effect = new ReactiveEffect(
       componentUpdateFn,
-      () => queueJob(update)
+      () => queueJob(update) // 控制 componentUpdateFn 执行时机，可以批处理
     ))
 
     const update = instance.update = effect.run.bind(effect)

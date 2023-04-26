@@ -1486,7 +1486,7 @@ const unmountChildren = children => {
 **方法列表**
 - h => 传入 VueComponent 对象
   - data: function(){ return {...} }
-  - render: function(): vnode{ return h() }
+  - render: function(): vnode{ return h() }，可接收 proxy 代理对象
 - createVNode => type 参数为对象，ShapeFlags.STATEFUL_COMPONENT，返回 vnode
 - render
 - patch => shapeFlag 为 COMPONENT 类型
@@ -1503,7 +1503,9 @@ const VueComponent = {
   data() {
     return { name: 'Stella' }
   },
-  render() {
+  render(proxy) {
+    // 源码中，调用 render.call(proxy, proxy)
+    // proxy === this
     return h('p', [h('div'), `Hello, I'm ${this.name}.`, h('div', `I love coding and dancing.`)])
   },
   
