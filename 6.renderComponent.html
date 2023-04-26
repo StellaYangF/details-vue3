@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core render component</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { createRenderer, h, render } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+
+    import { render, h } from './index.js'
+
+    const VueComponent = {
+      data() {
+        return { name: 'Stella', age: 18 }
+      },
+      render(proxy) {
+        setTimeout(() => {
+          // 以下两个数据更新,会触发 render 渲染两次
+          // 批量处理,
+          this.name = 'Yang'
+          this.age++
+        }, 1000)
+        // render 中不要修改数据，会导致死循环
+        console.log(proxy === this, 'proxy === this')
+        return h('p', [h('div', `Hello, I'm ${this.name}, ${this.age} years old.`), h('div', `I love coding and dancing.`)])
+      },
+      
+    }
+
+    render(h(VueComponent), app)
+    
+</script>
+</body>
+</html> 
