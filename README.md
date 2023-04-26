@@ -69,7 +69,7 @@ pnpm tsc --init
 `vue3` 是基于 `Proxy` 实现，而 `vue2` 是基于 `Object.defineProperty``。注意，Proxy` 搭配 `Reflect` 实现，用以解决 `this` 调用时指向问题。
 
 ```js
-cconst school = {
+const school = {
   students: 100,
   teachers: 200,
   get total() {
@@ -1850,8 +1850,84 @@ const setupRenderEffect = (instance, container, anchor) => {
 
 **属性更新**
 ```js
+const cm1 = {
+  props: {
+    address: String
+  },
+  render() {
+    // this.address 取值时会收集依赖
+    // 当传入的 props 更新时，会触发 renderEffect 重新执行
+    return h('div', this.address)
+  }
+}
 
+const VueComponent = {
+  data() {
+    return { name: 'Stella', age: 18, flag: false }
+  },
+  render() {
+    return h(Fragment,
+      [h('button', { onClick: () => { 
+        console.log(this.flag)
+        this.flag = !this.flag
+        } }, 'toggle render'),
+      h(cm1, { address: this.flag ? 'Wuhan' : 'Beijing' })]
+    )
+  },
+  
+}
+
+render(h(VueComponent), app)
 ```
+
+
+```js
+export const PublicInstanceProxyHandlers = {
+  get(target, key) {
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      return data[key]
+    } else if (hasOwn(props, key)) {
+      return props[key]
+    }
+    // $attrs
+    const publicGetter = publicPropertiesMap[key]
+    if (publicGetter) {
+      return publicGetter(target)
+    }
+  },
+  set(target, key, value) {
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      data[key] = value
+      return true
+    } else if (hasOwn(props, key)) {
+      // prop.key如果是子组件自己修改，则修改不成功，不会触发渲染
+      // updateComponent父组件修改数据，render 重新渲染
+      // 子组件拿到的新 prop发生变化，手动通过 instance.props.key=newValue
+      // 触发子组件重新渲染，取最新 prop 值
+      console.warn(`Attempting to mutate prop "${key}". Props are readonly.`)
+      return false
+    }
+    return true
+  }
+}
+```
+
+### processComponent 主流程
+1. mountComponent
+2. createComponentInstance
+3. createAppContext
+4. setupComponent
+5. initProps -> reactive component.type.props
+6. setupRenderEffect -> ReactiveEffect -> mount vnode -> collect dep
+7. componentUpdateFn
+8. queueJob -> scheduler -> batchUpdate
+9. updateComponent
+10. updateProps -> instance.props.key=newVal -> updateComponentFn
+
+![processComponent](./assets/processComponent.png)
+
 ## 补充
 
 ### 位运算符 
