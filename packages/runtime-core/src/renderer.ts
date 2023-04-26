@@ -3,13 +3,13 @@
 // 位运算比运算快，常见三种
 // << 左移运算符（二进制补位0，后边数字移动位数）
 
-import { EMPTY_OBJ, hasOwn, isArray, isObject, isString } from "@vue/shared"
+import { EMPTY_OBJ, isArray, isObject, isString } from "@vue/shared"
 import { renderOptions } from "@vue/runtime-dom"
 import { Fragment, Text } from "./vnode"
 import { createComponentInstance, setupComponent } from "./component"
-import { ReactiveEffect, reactive } from "@vue/reactivity"
+import { ReactiveEffect } from "@vue/reactivity"
 import { queueJob } from "./scheduler"
-import { PublicInstanceProxyHandlers, initProps, publicPropertiesMap } from "./componentProps"
+import { updateProps } from "./componentProps"
 
 // >> 右移
 export const enum ShapeFlags {
@@ -441,10 +441,12 @@ export function createRenderer(options) {
   }
 
   const updateComponent = (n1, n2) => {
+    const instance = (n2.component = n1.component)
+    const { props: prevProps } = n1
+    const { props: nextProps } = n2
 
+    updateProps(instance, prevProps, nextProps)
   }
-
-  const updateComponentPreRender = () => { }
 
   const render = (vnode, container) => {
     if (vnode == null) {

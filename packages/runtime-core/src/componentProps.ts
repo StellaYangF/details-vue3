@@ -49,9 +49,40 @@ export const PublicInstanceProxyHandlers = {
       data[key] = value
       return true
     } else if (hasOwn(props, key)) {
+      // prop.key如果是子组件自己修改，则修改不成功，不会触发渲染
+      // updateComponent父组件修改数据，render 重新渲染
+      // 子组件拿到的新 prop发生变化，手动通过 instance.props.key=newValue
+      // 触发子组件重新渲染，取最新 prop 值
       console.warn(`Attempting to mutate prop "${key}". Props are readonly.`)
       return false
     }
     return true
+  }
+}
+
+export const hasPropsChanged = (prevProps = {}, nextProps = {}) => {
+  const nextKeys = Object.keys(nextProps)
+
+  for (let i = 0; i < nextKeys.length; i++) {
+    const key = nextKeys[i]
+    if (nextProps[key] !== prevProps[key]) {
+      return true
+    }
+  }
+
+  return false
+}
+
+export function updateProps(instance, prevProps, nextProps) {
+  if (hasPropsChanged(prevProps, nextProps)) {
+    for (const key in nextProps) {
+      // 数据更新，触发
+      instance.props[key] = nextProps[key]
+    }
+    for (const key in instance.props) {
+      if (!(key in nextProps)) {
+        delete instance.props[key]
+      }
+    }
   }
 }

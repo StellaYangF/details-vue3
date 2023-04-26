@@ -300,6 +300,28 @@ var PublicInstanceProxyHandlers = {
     return true;
   }
 };
+var hasPropsChanged = (prevProps = {}, nextProps = {}) => {
+  const nextKeys = Object.keys(nextProps);
+  for (let i = 0; i < nextKeys.length; i++) {
+    const key = nextKeys[i];
+    if (nextProps[key] !== prevProps[key]) {
+      return true;
+    }
+  }
+  return false;
+};
+function updateProps(instance, prevProps, nextProps) {
+  if (hasPropsChanged(prevProps, nextProps)) {
+    for (const key in nextProps) {
+      instance.props[key] = nextProps[key];
+    }
+    for (const key in instance.props) {
+      if (!(key in nextProps)) {
+        delete instance.props[key];
+      }
+    }
+  }
+}
 
 // packages/runtime-core/src/component.ts
 var emptyAppContext = createAppContext();
@@ -655,8 +677,10 @@ function createRenderer(options) {
     update();
   };
   const updateComponent = (n1, n2) => {
-  };
-  const updateComponentPreRender = () => {
+    const instance = n2.component = n1.component;
+    const { props: prevProps } = n1;
+    const { props: nextProps } = n2;
+    updateProps(instance, prevProps, nextProps);
   };
   const render2 = (vnode, container) => {
     if (vnode == null) {

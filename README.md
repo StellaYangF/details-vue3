@@ -1616,38 +1616,241 @@ export function queueJob(job) {
 **组件Props、Attrs 实现**
 `Props` 和 `Attrs` 关系是：没有定义在 `component.props` 中的属性将存储到 `attrs` 对象中
 ```js
+const VueComponent = {
+  data() {
+    return { name: 'Stella', age: 18 }
+  },
+  props: {
+    address: String
+  },
+  render() {
+    return h('p', [h('div', `Hello, I'm ${this.name}, ${this.age} years old.`), h('div', `props & attrs: ${this.address}, ${this.$attrs.a}, ${this.$attrs.b}`)])
+  },
+  
+}
+
+render(h(VueComponent, { address: 'Wuhan', a: 1, b: 1 }), app)
 ```
 
 **initProps**
 ```js
+const mountComponent = (initialVNode, container, anchor) => {
+  // 创建实例
+  const instance = (initialVNode.component = createComponentInstance(initialVNode))
+  // 给实例赋值,data => reactive
+  setupComponent(instance)
+  // 创建 renderEffect 并更新渲染
+  setupRenderEffect(instance, container, anchor)
+}
 ```
 
 **componentProps.ts**
 ```js
+export function initProps(
+  instance,
+  rawProps
+) {
+  const props = {}
+  const attrs = {}
+  // 获取组件 用户的配置
+  const options = instance.propsOptions || {} // VueComponent.type.props
+
+  if (rawProps) {
+    for (let key in rawProps) {
+      const value = rawProps[key]
+      if (key in options) {
+        props[key] = value
+      } else {
+        attrs[key] = value
+      }
+    }
+  }
+
+  instance.props = reactive(props); // 这里应该用shallowReactive，遵循单向数据流原则
+  instance.attrs = attrs
+}
 ```
 
 **属性代理**
 ```js
+export const PublicInstanceProxyHandlers = {
+  get(target, key) {
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      return data[key]
+    } else if (hasOwn(props, key)) {
+      return props[key]
+    }
+    // $attrs
+    const publicGetter = publicPropertiesMap[key]
+    if (publicGetter) {
+      return publicGetter(target)
+    }
+  },
+  set(target, key, value) {
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      data[key] = value
+      return true
+    } else if (hasOwn(props, key)) {
+      console.warn(`Attempting to mutate prop "${key}". Props are readonly.`)
+      return false
+    }
+    return true
+  }
+}
 ```
 
 **组件流程整合**
 
+```js
+const mountComponent = (initialVNode, container, anchor) => {
+  // 创建实例
+  const instance = (initialVNode.component = createComponentInstance(initialVNode))
+  // 给实例赋值,data => reactive
+  setupComponent(instance)
+  // 创建 renderEffect 并更新渲染
+  setupRenderEffect(instance, container, anchor)
+}
+```
+
 
 **1）创建组件实例**
 ```js
+
+export function createAppContext() {
+  return {
+    app: null,
+    config: {
+      isNativeTag: NO,
+      performance: false,
+      globalProperties: {},
+      optionMergeStrategies: {},
+      errorHandler: undefined,
+      warnHandler: undefined,
+      compilerOptions: {}
+    },
+    mixins: [],
+    components: {},
+    directives: {},
+    provides: Object.create(null),
+    optionsCache: new WeakMap(),
+    propsCache: new WeakMap(),
+    emitsCache: new WeakMap()
+  }
+}
+
+const emptyAppContext = createAppContext()
+
+let uid = 0
+export type Data = Record<string, unknown>
+
+export function createComponentInstance(vnode) {
+  const type = vnode.type
+  const appContext = emptyAppContext
+
+  const instance = {
+    uid: uid++,
+    vnode, // 组件的虚拟节点
+    type,
+    appContext,
+    isMounted: false,
+    subTree: null!, // 要渲染的子节点
+    update: null!, // creation 后同步设置
+    // state
+    data: EMPTY_OBJ,
+    props: EMPTY_OBJ, // 父组件传入的 props
+    attrs: EMPTY_OBJ, // 子组件没有定义 props,会放入 $attrs中
+    proxy: null, // 代理对象
+    propsOptions: vnode.type.props // VueComponent.type 为一个对象
+  }
+
+  return instance
+}
 ```
 
 
 **2）设置组件属性**
 ```js
+export function setupComponent(instance) {
+  const { props, type } = instance.vnode
+  initProps(instance, props)
+  instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers)
+  const data = type.data
+  if (data) {
+    if (!isFunction(data)) return console.warn(`The data option must be a function`)
+    instance.data = reactive(data.call(instance.proxy))
+  }
+
+  instance.render = type.render
+}
+
+export const PublicInstanceProxyHandlers = {
+  get(target, key) {
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      return data[key]
+    } else if (hasOwn(props, key)) {
+      return props[key]
+    }
+    // $attrs
+    const publicGetter = publicPropertiesMap[key]
+    if (publicGetter) {
+      return publicGetter(target)
+    }
+  },
+  set(target, key, value) {
+    const { data, props } = target
+    if (data && hasOwn(data, key)) {
+      data[key] = value
+      return true
+    } else if (hasOwn(props, key)) {
+      console.warn(`Attempting to mutate prop "${key}". Props are readonly.`)
+      return false
+    }
+    return true
+  }
 ```
 
 **3）渲染effect**
 ```js
+const setupRenderEffect = (instance, container, anchor) => {
+
+  const { render } = instance
+
+  const componentUpdateFn = () => {
+    if (!instance.isMounted) {
+      // render() { return h() }
+      // 返回的就是 vnode
+      const subTree = render.call(instance.proxy, instance.proxy)
+      patch(null, subTree, container, anchor)
+      // 方便再次挂载时，前后 vnode 进行比对
+      instance.subTree = subTree
+      // 挂载后修改 isMounted 值
+      instance.isMounted = true
+    } else {
+      // 用户传入的 render 方法可以接收 reactive 返回的代理对象
+      const subTree = render.call(instance.proxy, instance.proxy)
+      patch(instance.subTree, subTree, container, anchor)
+      instance.subTree = subTree
+    }
+  }
+
+  const effect = (instance.effect = new ReactiveEffect(
+    componentUpdateFn,
+    () => queueJob(update) // 控制 componentUpdateFn 执行时机，可以批处理
+  ))
+
+  const update = instance.update = effect.run.bind(effect)
+
+
+  update()
+}
 ```
 
 **属性更新**
 ```js
+
 ```
 ## 补充
 

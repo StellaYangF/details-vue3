@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core props update</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { createRenderer, h, render } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+
+    import { render, h,Fragment } from './index.js'
+
+    const cm1 = {
+      props: {
+        address: String
+      },
+      render() {
+        // this.address 取值时会收集依赖
+        // 当传入的 props 更新时，会触发 renderEffect 重新执行
+        return h('div', this.address)
+      }
+    }
+
+    const VueComponent = {
+      data() {
+        return { name: 'Stella', age: 18, flag: false }
+      },
+      render() {
+        return h(Fragment,
+          [h('button', { onClick: () => { 
+            console.log(this.flag)
+            this.flag = !this.flag
+           } }, 'toggle render'),
+          h(cm1, { address: this.flag ? 'Wuhan' : 'Beijing' })]
+        )
+      },
+      
+    }
+
+    render(h(VueComponent), app)
+    
+</script>
+</body>
+</html> 
