@@ -2,12 +2,17 @@
 function isObject(val) {
   return val !== null && typeof val === "object";
 }
+function isFunction(val) {
+  return typeof val === "function";
+}
 var isArray = Array.isArray;
 var onRE = /^on[^a-z]/;
 var isOn = (key) => onRE.test(key);
 var isString = (val) => typeof val === "string";
 var EMPTY_OBJ = {};
 var NO = () => false;
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var hasOwn = (val, key) => hasOwnProperty.call(val, key);
 
 // packages/runtime-dom/src/nodeOps.ts
 var doc = typeof document !== "undefined" ? document : null;
@@ -132,38 +137,6 @@ function createAppContext() {
   };
 }
 
-// packages/runtime-core/src/component.ts
-var emptyAppContext = createAppContext();
-var uid = 0;
-function createComponentInstance(vnode) {
-  const type = vnode.type;
-  const appContext = emptyAppContext;
-  const instance = {
-    uid: uid++,
-    vnode,
-    // 组件的虚拟节点
-    type,
-    appContext,
-    root: null,
-    // 立即设置
-    isMounted: false,
-    subTree: null,
-    // 要渲染的子节点
-    update: null,
-    // creation 后同步设置
-    // state
-    data: EMPTY_OBJ,
-    ctx: EMPTY_OBJ,
-    props: EMPTY_OBJ,
-    attrs: EMPTY_OBJ,
-    slots: EMPTY_OBJ,
-    refs: EMPTY_OBJ,
-    setupState: EMPTY_OBJ,
-    setupContext: null
-  };
-  return instance;
-}
-
 // packages/reactivity/src/effect.ts
 var activeEffect = null;
 var targetMap = /* @__PURE__ */ new WeakMap();
@@ -279,6 +252,103 @@ function reactive(target) {
   const proxy = new Proxy(target, mutableHandlers);
   reactiveMap.set(target, proxy);
   return proxy;
+}
+
+// packages/runtime-core/src/componentProps.ts
+var publicPropertiesMap = {
+  $attrs: (i) => i.attrs
+};
+function initProps(instance, rawProps) {
+  const props = {};
+  const attrs = {};
+  const options = instance.propsOptions || {};
+  if (rawProps) {
+    for (let key in rawProps) {
+      debugger;
+      const value = rawProps[key];
+      if (key in options) {
+        props[key] = value;
+      } else {
+        attrs[key] = value;
+      }
+    }
+  }
+  instance.props = reactive(props);
+  instance.attrs = attrs;
+}
+var PublicInstanceProxyHandlers = {
+  get(target, key) {
+    const { data, props } = target;
+    if (data && hasOwn(data, key)) {
+      return data[key];
+    } else if (hasOwn(props, key)) {
+      return props[key];
+    }
+    const publicGetter = publicPropertiesMap[key];
+    if (publicGetter) {
+      return publicGetter(target);
+    }
+  },
+  set(target, key, value) {
+    const { data, props } = target;
+    if (data && hasOwn(data, key)) {
+      data[key] = value;
+      return true;
+    } else if (hasOwn(props, key)) {
+      console.warn(`Attempting to mutate prop "${key}". Props are readonly.`);
+      return false;
+    }
+    return true;
+  }
+};
+
+// packages/runtime-core/src/component.ts
+var emptyAppContext = createAppContext();
+var uid = 0;
+function createComponentInstance(vnode) {
+  const type = vnode.type;
+  const appContext = emptyAppContext;
+  const instance = {
+    uid: uid++,
+    vnode,
+    // 组件的虚拟节点
+    type,
+    appContext,
+    root: null,
+    // 立即设置
+    isMounted: false,
+    subTree: null,
+    // 要渲染的子节点
+    update: null,
+    // creation 后同步设置
+    // state
+    data: EMPTY_OBJ,
+    ctx: EMPTY_OBJ,
+    props: EMPTY_OBJ,
+    // 父组件传入的 props
+    attrs: EMPTY_OBJ,
+    // 子组件没有定义 props,会放入 $attrs中
+    slots: EMPTY_OBJ,
+    refs: EMPTY_OBJ,
+    setupState: EMPTY_OBJ,
+    setupContext: null,
+    proxy: null,
+    // 代理对象
+    propsOptions: vnode.props
+  };
+  return instance;
+}
+function setupComponent(instance) {
+  const { props, type } = instance.vnode;
+  initProps(instance, props);
+  instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
+  const data = type.data;
+  if (data) {
+    if (!isFunction(data))
+      return console.warn(`The data option must be a function`);
+    instance.data = reactive(data.call(instance.proxy));
+  }
+  instance.render = type.render;
 }
 
 // packages/runtime-core/src/scheduler.ts
@@ -566,20 +636,19 @@ function createRenderer(options) {
   };
   const mountComponent = (initialVNode, container, anchor) => {
     const instance = initialVNode.component = createComponentInstance(initialVNode);
-    setupRenderEffect(instance, initialVNode, container, anchor);
+    setupComponent(instance);
+    setupRenderEffect(instance, container, anchor);
   };
-  const setupRenderEffect = (instance, initialVNode, container, anchor) => {
-    const { render: render3, data = () => {
-    } } = initialVNode.type;
-    const state = reactive(data());
+  const setupRenderEffect = (instance, container, anchor) => {
+    const { render: render3 } = instance;
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const subTree = render3.call(state, state);
+        const subTree = render3.call(instance.proxy, instance.proxy);
         patch(null, subTree, container, anchor);
         instance.subTree = subTree;
         instance.isMounted = true;
       } else {
-        const subTree = render3.call(state, state);
+        const subTree = render3.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
       }

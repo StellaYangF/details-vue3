@@ -3,12 +3,13 @@
 // 位运算比运算快，常见三种
 // << 左移运算符（二进制补位0，后边数字移动位数）
 
-import { EMPTY_OBJ, isArray, isObject, isString } from "@vue/shared"
+import { EMPTY_OBJ, hasOwn, isArray, isObject, isString } from "@vue/shared"
 import { renderOptions } from "@vue/runtime-dom"
 import { Fragment, Text } from "./vnode"
-import { createComponentInstance } from "./component"
+import { createComponentInstance, setupComponent } from "./component"
 import { ReactiveEffect, reactive } from "@vue/reactivity"
 import { queueJob } from "./scheduler"
+import { PublicInstanceProxyHandlers, initProps, publicPropertiesMap } from "./componentProps"
 
 // >> 右移
 export const enum ShapeFlags {
@@ -398,19 +399,23 @@ export function createRenderer(options) {
   }
 
   const mountComponent = (initialVNode, container, anchor) => {
+    // 创建实例
     const instance = (initialVNode.component = createComponentInstance(initialVNode))
-    setupRenderEffect(instance, initialVNode, container, anchor)
+    // 给实例赋值,data => reactive
+    setupComponent(instance)
+    // 创建 renderEffect 并更新渲染
+    setupRenderEffect(instance, container, anchor)
   }
 
-  const setupRenderEffect = (instance, initialVNode, container, anchor) => {
-    const { render, data = () => { } } = initialVNode.type
-    const state = reactive(data())
+  const setupRenderEffect = (instance, container, anchor) => {
+
+    const { render } = instance
 
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
         // render() { return h() }
         // 返回的就是 vnode
-        const subTree = render.call(state, state)
+        const subTree = render.call(instance.proxy, instance.proxy)
         patch(null, subTree, container, anchor)
         // 方便再次挂载时，前后 vnode 进行比对
         instance.subTree = subTree
@@ -418,7 +423,7 @@ export function createRenderer(options) {
         instance.isMounted = true
       } else {
         // 用户传入的 render 方法可以接收 reactive 返回的代理对象
-        const subTree = render.call(state, state)
+        const subTree = render.call(instance.proxy, instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
       }
