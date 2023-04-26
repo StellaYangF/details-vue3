@@ -12,11 +12,10 @@ export function initProps(
   const props = {}
   const attrs = {}
   // 获取组件 用户的配置
-  const options = instance.propsOptions || {}
+  const options = instance.propsOptions || {} // VueComponent.type.props
 
   if (rawProps) {
     for (let key in rawProps) {
-      debugger
       const value = rawProps[key]
       if (key in options) {
         props[key] = value

@@ -18,21 +18,15 @@ export function createComponentInstance(vnode) {
     vnode, // 组件的虚拟节点
     type,
     appContext,
-    root: null!, // 立即设置
     isMounted: false,
     subTree: null!, // 要渲染的子节点
     update: null!, // creation 后同步设置
     // state
     data: EMPTY_OBJ,
-    ctx: EMPTY_OBJ,
     props: EMPTY_OBJ, // 父组件传入的 props
     attrs: EMPTY_OBJ, // 子组件没有定义 props,会放入 $attrs中
-    slots: EMPTY_OBJ,
-    refs: EMPTY_OBJ,
-    setupState: EMPTY_OBJ,
-    setupContext: null,
     proxy: null, // 代理对象
-    propsOptions: vnode.props
+    propsOptions: vnode.type.props // VueComponent.type 为一个对象
   }
 
   return instance
