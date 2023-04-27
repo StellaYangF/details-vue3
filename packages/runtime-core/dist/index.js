@@ -254,6 +254,26 @@ function reactive(target) {
   return proxy;
 }
 
+// packages/reactivity/src/ref.ts
+function proxyRefs(objectWithRefs) {
+  return new Proxy(objectWithRefs, {
+    get(target, key, receiver) {
+      const v = Reflect.get(target, key, receiver);
+      return v.__v_isRef ? v.value : v;
+    },
+    // 设置的时候如果是ref,则给ref.value赋值
+    set(target, key, value, receiver) {
+      const oldValue = target[key];
+      if (oldValue.__v_isRef) {
+        oldValue.value = value;
+        return value;
+      } else {
+        return Reflect.set(target, key, value, receiver);
+      }
+    }
+  });
+}
+
 // packages/runtime-core/src/componentProps.ts
 var publicPropertiesMap = {
   $attrs: (i) => i.attrs
@@ -277,11 +297,13 @@ function initProps(instance, rawProps) {
 }
 var PublicInstanceProxyHandlers = {
   get(target, key) {
-    const { data, props } = target;
+    const { data, props, setupState } = target;
     if (data && hasOwn(data, key)) {
       return data[key];
     } else if (hasOwn(props, key)) {
       return props[key];
+    } else if (setupState && hasOwn(setupState, key)) {
+      return setupState[key];
     }
     const publicGetter = publicPropertiesMap[key];
     if (publicGetter) {
@@ -289,13 +311,15 @@ var PublicInstanceProxyHandlers = {
     }
   },
   set(target, key, value) {
-    const { data, props } = target;
+    const { data, props, setupState } = target;
     if (data && hasOwn(data, key)) {
       data[key] = value;
       return true;
     } else if (hasOwn(props, key)) {
       console.warn(`Attempting to mutate prop "${key}". Props are readonly.`);
       return false;
+    } else if (setupState && hasOwn(setupState, key)) {
+      setupState[key] = value;
     }
     return true;
   }
@@ -356,6 +380,16 @@ function createComponentInstance(vnode) {
 function setupComponent(instance) {
   const { props, type } = instance.vnode;
   initProps(instance, props);
+  let { setup } = type;
+  if (setup) {
+    const setupContext = {};
+    const setupResult = setup(instance.props, setupContext);
+    if (isFunction(setupResult)) {
+      instance.render = setupResult;
+    } else if (isObject(setupResult)) {
+      instance.setupState = proxyRefs(setupResult);
+    }
+  }
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers);
   const data = type.data;
   if (data) {
@@ -363,7 +397,9 @@ function setupComponent(instance) {
       return console.warn(`The data option must be a function`);
     instance.data = reactive(data.call(instance.proxy));
   }
-  instance.render = type.render;
+  if (!instance.render) {
+    instance.render = type.render;
+  }
 }
 
 // packages/runtime-core/src/scheduler.ts

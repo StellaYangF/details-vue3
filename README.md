@@ -1914,7 +1914,7 @@ export const PublicInstanceProxyHandlers = {
 }
 ```
 
-### processComponent 主流程
+#### processComponent 主流程
 1. mountComponent
 2. createComponentInstance
 3. createAppContext
@@ -1928,7 +1928,7 @@ export const PublicInstanceProxyHandlers = {
 
 ![processComponent](./assets/processComponent.png)
 
-### 优化 updateComponent 
+#### 优化 updateComponent 
 
 属性更新逻辑抽离出来，slots 更新也会导致页面更新
 
@@ -1987,6 +1987,106 @@ const componentUpdateFn = () => {
     const subTree = render.call(instance.proxy, instance.proxy)
     patch(instance.subTree, subTree, container, anchor)
     instance.subTree = subTree
+  }
+}
+```
+
+#### setup函数
+组件的 render 函数每次更新时都会重新执行,但是 setup 函数只会在组件挂载时执行一次。
+
+- setup 函数是 compositionAPI 的入口
+- 可以在函数内部编写逻辑，解决 vue2 中反复横跳问题
+- setup 返回函数时为组件的 render 函数,返回对象时对象中的数据将暴露给模板使用
+- setup 中函数的参数为 props、context({ slots, emit, attrs, expose })
+
+```js
+// 组件的render函数每次更新时都会重新执行
+// 但是setup函数只会在组件挂载时执行一次。
+const VueComponent = {
+  props: {
+    address: String
+  },
+  setup(props) {
+    const name = ref('Stella')
+    return {
+      name,
+      address: props.address
+    }
+  },
+  render() {
+    return h('div', `${this.name}, ${this.address}`)
+  },
+  
+}
+
+render(h(VueComponent, { address: 'Wuhan' }), app)
+```
+
+对 setup 函数进行解析
+```js
+function setupComponent(instance) {
+  const { props, type } = instance.vnode
+  initProps(instance, props)
+
+  // 解析 setup 
+  let { setup } = type
+  if (setup) {
+    const setupContext = {}
+    const setupResult = setup(instance.props, setupContext)
+
+    if (isFunction(setupResult)) {
+      instance.render = setupResult
+    } else if (isObject(setupResult)) {
+      instance.setupState = proxyRefs(setupResult)
+    }
+  }
+
+  instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers)
+  const data = type.data
+  if (data) {
+    if (!isFunction(data)) return console.warn(`The data option must be a function`)
+    instance.data = reactive(data.call(instance.proxy))
+  }
+  if (!instance.render) {
+    instance.render = type.render
+  }
+}
+```
+
+新增取值范围
+```js
+const PublicInstanceProxyHandlers = {
+  get(target, key) {
+    const { data, props, setupState } = target
+    if (data && hasOwn(data, key)) {
+      return data[key]
+    } else if (hasOwn(props, key)) {
+      return props[key]
+    } else if (setupState && hasOwn(setupState, key)) {
+      return setupState[key]
+    }
+    // $attrs
+    const publicGetter = publicPropertiesMap[key]
+    if (publicGetter) {
+      return publicGetter(target)
+    }
+  },
+  set(target, key, value) {
+    const { data, props, setupState } = target
+    if (data && hasOwn(data, key)) {
+      data[key] = value
+      return true
+    } else if (hasOwn(props, key)) {
+      // prop.key如果是子组件自己修改，则修改不成功，不会触发渲染
+      // updateComponent父组件修改数据，render 重新渲染
+      // 子组件拿到的新 prop发生变化，手动通过 instance.props.key=newValue
+      // 触发子组件重新渲染，取最新 prop 值
+      console.warn(`Attempting to mutate prop "${key}". Props are readonly.`)
+      return false
+    } else if (setupState && hasOwn(setupState, key)) {
+      setupState[key] = value
+    }
+    return true
   }
 }
 ```

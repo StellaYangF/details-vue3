@@ -1,7 +1,7 @@
-import { EMPTY_OBJ, isFunction } from "@vue/shared"
+import { EMPTY_OBJ, isFunction, isObject } from "@vue/shared"
 import { createAppContext } from "./apiCreateApp"
 import { PublicInstanceProxyHandlers, initProps } from "./componentProps"
-import { reactive } from "@vue/reactivity"
+import { proxyRefs, reactive } from "@vue/reactivity"
 
 const emptyAppContext = createAppContext()
 
@@ -35,12 +35,27 @@ export function createComponentInstance(vnode) {
 export function setupComponent(instance) {
   const { props, type } = instance.vnode
   initProps(instance, props)
+
+  // 解析 setup 
+  let { setup } = type
+  if (setup) {
+    const setupContext = {}
+    const setupResult = setup(instance.props, setupContext)
+
+    if (isFunction(setupResult)) {
+      instance.render = setupResult
+    } else if (isObject(setupResult)) {
+      instance.setupState = proxyRefs(setupResult)
+    }
+  }
+
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers)
   const data = type.data
   if (data) {
     if (!isFunction(data)) return console.warn(`The data option must be a function`)
     instance.data = reactive(data.call(instance.proxy))
   }
-
-  instance.render = type.render
+  if (!instance.render) {
+    instance.render = type.render
+  }
 }

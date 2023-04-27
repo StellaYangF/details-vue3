@@ -422,6 +422,7 @@ export function createRenderer(options) {
         instance.isMounted = true
       } else {
         // updateComponent 属性变化或slots变化，均手动触发 instance.update
+        // 运行的是当前的 effect，再次触发此 effect。跳过循环操作（activeEffect !== effect）。
         let { next } = instance
         if (next) {
           updateComponentPreRender(instance, next)

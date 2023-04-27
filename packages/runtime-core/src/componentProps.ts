@@ -31,11 +31,13 @@ export function initProps(
 
 export const PublicInstanceProxyHandlers = {
   get(target, key) {
-    const { data, props } = target
+    const { data, props, setupState } = target
     if (data && hasOwn(data, key)) {
       return data[key]
     } else if (hasOwn(props, key)) {
       return props[key]
+    } else if (setupState && hasOwn(setupState, key)) {
+      return setupState[key]
     }
     // $attrs
     const publicGetter = publicPropertiesMap[key]
@@ -44,7 +46,7 @@ export const PublicInstanceProxyHandlers = {
     }
   },
   set(target, key, value) {
-    const { data, props } = target
+    const { data, props, setupState } = target
     if (data && hasOwn(data, key)) {
       data[key] = value
       return true
@@ -55,6 +57,8 @@ export const PublicInstanceProxyHandlers = {
       // 触发子组件重新渲染，取最新 prop 值
       console.warn(`Attempting to mutate prop "${key}". Props are readonly.`)
       return false
+    } else if (setupState && hasOwn(setupState, key)) {
+      setupState[key] = value
     }
     return true
   }

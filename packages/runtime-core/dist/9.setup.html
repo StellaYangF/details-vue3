@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core setup</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { createRenderer, h, render, ref } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+
+    import { render, h,  } from './index.js'
+    import { ref } from '../../reactivity/dist/index.js'
+
+    const cm1 = {
+      props: {
+        address: String
+      },
+      render() {
+        return h('div', this.address)
+      }
+    }
+
+    // 组件的render函数每次更新时都会重新执行
+    // 但是setup函数只会在组件挂载时执行一次。
+    const VueComponent = {
+      props: {
+        address: String
+      },
+      setup(props) {
+        const name = ref('Stella')
+        return {
+          name,
+          address: props.address
+        }
+      },
+      render() {
+        return h('div', `${this.name}, ${this.address}`)
+      },
+      
+    }
+
+    render(h(VueComponent, { address: 'Wuhan' }), app)
+    
+</script>
+</body>
+</html> 
