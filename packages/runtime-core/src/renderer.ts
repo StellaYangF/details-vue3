@@ -9,7 +9,7 @@ import { Fragment, Text } from "./vnode"
 import { createComponentInstance, setupComponent } from "./component"
 import { ReactiveEffect } from "@vue/reactivity"
 import { queueJob } from "./scheduler"
-import { updateProps } from "./componentProps"
+import { hasPropsChanged, updateProps } from "./componentProps"
 
 // >> 右移
 export const enum ShapeFlags {
@@ -408,7 +408,6 @@ export function createRenderer(options) {
   }
 
   const setupRenderEffect = (instance, container, anchor) => {
-
     const { render } = instance
 
     const componentUpdateFn = () => {
@@ -422,7 +421,11 @@ export function createRenderer(options) {
         // 挂载后修改 isMounted 值
         instance.isMounted = true
       } else {
-        // 用户传入的 render 方法可以接收 reactive 返回的代理对象
+        // updateComponent 属性变化或slots变化，均手动触发 instance.update
+        let { next } = instance
+        if (next) {
+          updateComponentPreRender(instance, next)
+        }
         const subTree = render.call(instance.proxy, instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
         instance.subTree = subTree
@@ -436,16 +439,32 @@ export function createRenderer(options) {
 
     const update = instance.update = effect.run.bind(effect)
 
-
     update()
+  }
+
+  function updateComponentPreRender(instance, next) {
+    instance.next = null
+    instance.vnode = next
+    updateProps(instance.props, next.props)
+  }
+
+  const shouldUpdateComponent = (n1, n2) => {
+    const { props: prevProps, children: prevChildren } = n1
+    const { props: nextProps, children: nextChildren } = n2
+
+    if (prevChildren || nextChildren) return true
+
+    if (prevProps === nextProps) return false
+
+    return hasPropsChanged(prevProps, nextProps)
   }
 
   const updateComponent = (n1, n2) => {
     const instance = (n2.component = n1.component)
-    const { props: prevProps } = n1
-    const { props: nextProps } = n2
-
-    updateProps(instance, prevProps, nextProps)
+    if (shouldUpdateComponent(n1, n2)) {
+      instance.next = n2
+      instance.update()
+    }
   }
 
   const render = (vnode, container) => {
@@ -462,7 +481,6 @@ export function createRenderer(options) {
     render
   }
 }
-
 
 export function render(vnode, container) {
   // 内置渲染器，会自动传入 DOM api，专门给 vue 使用

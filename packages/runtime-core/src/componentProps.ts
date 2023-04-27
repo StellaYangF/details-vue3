@@ -73,15 +73,15 @@ export const hasPropsChanged = (prevProps = {}, nextProps = {}) => {
   return false
 }
 
-export function updateProps(instance, prevProps, nextProps) {
+export function updateProps(prevProps, nextProps) {
   if (hasPropsChanged(prevProps, nextProps)) {
     for (const key in nextProps) {
       // 数据更新，触发
-      instance.props[key] = nextProps[key]
+      prevProps[key] = nextProps[key]
     }
-    for (const key in instance.props) {
+    for (const key in prevProps) {
       if (!(key in nextProps)) {
-        delete instance.props[key]
+        delete prevProps[key]
       }
     }
   }

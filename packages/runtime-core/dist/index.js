@@ -310,14 +310,14 @@ var hasPropsChanged = (prevProps = {}, nextProps = {}) => {
   }
   return false;
 };
-function updateProps(instance, prevProps, nextProps) {
+function updateProps(prevProps, nextProps) {
   if (hasPropsChanged(prevProps, nextProps)) {
     for (const key in nextProps) {
-      instance.props[key] = nextProps[key];
+      prevProps[key] = nextProps[key];
     }
-    for (const key in instance.props) {
+    for (const key in prevProps) {
       if (!(key in nextProps)) {
-        delete instance.props[key];
+        delete prevProps[key];
       }
     }
   }
@@ -663,6 +663,10 @@ function createRenderer(options) {
         instance.subTree = subTree;
         instance.isMounted = true;
       } else {
+        let { next } = instance;
+        if (next) {
+          updateComponentPreRender(instance, next);
+        }
         const subTree = render3.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
         instance.subTree = subTree;
@@ -676,11 +680,26 @@ function createRenderer(options) {
     const update = instance.update = effect.run.bind(effect);
     update();
   };
+  function updateComponentPreRender(instance, next) {
+    instance.next = null;
+    instance.vnode = next;
+    updateProps(instance.props, next.props);
+  }
+  const shouldUpdateComponent = (n1, n2) => {
+    const { props: prevProps, children: prevChildren } = n1;
+    const { props: nextProps, children: nextChildren } = n2;
+    if (prevChildren || nextChildren)
+      return true;
+    if (prevProps === nextProps)
+      return false;
+    return hasPropsChanged(prevProps, nextProps);
+  };
   const updateComponent = (n1, n2) => {
     const instance = n2.component = n1.component;
-    const { props: prevProps } = n1;
-    const { props: nextProps } = n2;
-    updateProps(instance, prevProps, nextProps);
+    if (shouldUpdateComponent(n1, n2)) {
+      instance.next = n2;
+      instance.update();
+    }
   };
   const render2 = (vnode, container) => {
     if (vnode == null) {
