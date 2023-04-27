@@ -13,6 +13,11 @@ var EMPTY_OBJ = {};
 var NO = () => false;
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 var hasOwn = (val, key) => hasOwnProperty.call(val, key);
+var invokeArrayFns = (fns) => {
+  for (let i = 0; i < fns.length; i++) {
+    fns[i]();
+  }
+};
 
 // packages/runtime-dom/src/nodeOps.ts
 var doc = typeof document !== "undefined" ? document : null;
@@ -398,7 +403,9 @@ function setupComponent(instance) {
         handler && handler(...args);
       }
     };
+    setCurrentInstance(instance);
     const setupResult = setup(instance.props, setupContext);
+    unsetCurrentInstance(null);
     if (isFunction(setupResult)) {
       instance.render = setupResult;
     } else if (isObject(setupResult)) {
@@ -416,6 +423,9 @@ function setupComponent(instance) {
     instance.render = type.render;
   }
 }
+var currentInstance;
+var setCurrentInstance = (instance) => currentInstance = instance;
+var unsetCurrentInstance = (val = null) => currentInstance = null;
 
 // packages/runtime-core/src/scheduler.ts
 var queue = [];
@@ -709,17 +719,22 @@ function createRenderer(options) {
     const { render: render3 } = instance;
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
+        const { bm, m } = instance;
+        bm && invokeArrayFns(bm);
         const subTree = render3.call(instance.proxy, instance.proxy);
         patch(null, subTree, container, anchor);
+        m && invokeArrayFns(m);
         instance.subTree = subTree;
         instance.isMounted = true;
       } else {
-        let { next } = instance;
+        let { next, bu, u } = instance;
         if (next) {
-          updateComponentPreRender(instance, next);
+          next && updateComponentPreRender(instance, next);
         }
+        bu && invokeArrayFns(bu);
         const subTree = render3.call(instance.proxy, instance.proxy);
         patch(instance.subTree, subTree, container, anchor);
+        u && invokeArrayFns(u);
         instance.subTree = subTree;
       }
     };

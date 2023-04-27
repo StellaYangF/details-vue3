@@ -57,7 +57,9 @@ export function setupComponent(instance) {
         handler && handler(...args)
       }
     }
+    setCurrentInstance(instance)
     const setupResult = setup(instance.props, setupContext)
+    unsetCurrentInstance(null)
 
     if (isFunction(setupResult)) {
       instance.render = setupResult
@@ -76,3 +78,8 @@ export function setupComponent(instance) {
     instance.render = type.render
   }
 }
+
+export let currentInstance
+export const setCurrentInstance = instance => (currentInstance = instance)
+export const getCurrentInstance = () => currentInstance
+export const unsetCurrentInstance = (val = null) => currentInstance = null

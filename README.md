@@ -2218,8 +2218,19 @@ export function setupComponent(instance) {
 ```
 
 ### 生命周期实现原理
+生命周期需要让当前实例关联对应的生命周期，这样在组件构建过程中就可以调用对应的钩子
+
+component.ts
+```js
+```
+
+```js
+```
 
 #### 创建生命周期钩子
+apiLifecycle.ts
+```js
+```
 
 #### 钩子调用
 

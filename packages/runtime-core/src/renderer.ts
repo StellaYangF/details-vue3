@@ -3,7 +3,7 @@
 // 位运算比运算快，常见三种
 // << 左移运算符（二进制补位0，后边数字移动位数）
 
-import { EMPTY_OBJ, isArray, isObject, isString } from "@vue/shared"
+import { EMPTY_OBJ, invokeArrayFns, isArray, isObject, isString } from "@vue/shared"
 import { renderOptions } from "@vue/runtime-dom"
 import { Fragment, Text } from "./vnode"
 import { createComponentInstance, setupComponent } from "./component"
@@ -412,23 +412,26 @@ export function createRenderer(options) {
 
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        // render() { return h() }
-        // 返回的就是 vnode
+
+        const { bm, m } = instance
+        bm && invokeArrayFns(bm)
+
         const subTree = render.call(instance.proxy, instance.proxy)
         patch(null, subTree, container, anchor)
-        // 方便再次挂载时，前后 vnode 进行比对
+        m && invokeArrayFns(m)
         instance.subTree = subTree
-        // 挂载后修改 isMounted 值
         instance.isMounted = true
       } else {
         // updateComponent 属性变化或slots变化，均手动触发 instance.update
         // 运行的是当前的 effect，再次触发此 effect。跳过循环操作（activeEffect !== effect）。
-        let { next } = instance
+        let { next, bu, u } = instance
         if (next) {
-          updateComponentPreRender(instance, next)
+          next && updateComponentPreRender(instance, next)
         }
+        bu && invokeArrayFns(bu)
         const subTree = render.call(instance.proxy, instance.proxy)
         patch(instance.subTree, subTree, container, anchor)
+        u && invokeArrayFns(u)
         instance.subTree = subTree
       }
     }

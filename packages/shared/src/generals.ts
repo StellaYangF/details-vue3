@@ -23,3 +23,9 @@ export const hasOwn = (
   val: object,
   key: string | symbol
 ): key is keyof typeof val => hasOwnProperty.call(val, key)
+
+export const invokeArrayFns = fns => {
+  for (let i = 0; i < fns.length; i++) {
+    fns[i]()
+  }
+}
