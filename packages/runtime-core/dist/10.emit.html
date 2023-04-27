@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core emit</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { h, render } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    import { render, h,  } from './index.js'
+
+    const VueComponent = {
+      setup(props, ctx) {
+        const handleClick = () => ctx.emit('tap')
+
+        return () => h('button', {
+          onClick: handleClick
+        }, 'Click me')
+      },
+      
+    }
+
+    render(h(VueComponent, {
+      onTap: () => alert('Bonjour!')
+    }), app)
+    
+</script>
+</body>
+</html> 

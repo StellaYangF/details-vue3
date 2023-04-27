@@ -382,7 +382,14 @@ function setupComponent(instance) {
   initProps(instance, props);
   let { setup } = type;
   if (setup) {
-    const setupContext = {};
+    const setupContext = {
+      attrs: instance.attrs,
+      emit: (event, ...args) => {
+        const eventName = `on${event[0].toUpperCase() + event.slice(1)}`;
+        const handler = instance.vnode.props[eventName];
+        handler && handler(...args);
+      }
+    };
     const setupResult = setup(instance.props, setupContext);
     if (isFunction(setupResult)) {
       instance.render = setupResult;

@@ -2091,6 +2091,70 @@ const PublicInstanceProxyHandlers = {
 }
 ```
 
+### 实现emit
+```js
+const VueComponent = {
+  setup(props, ctx) {
+    const handleClick = () => ctx.emit('tap')
+
+    return () => h('button', {
+      onClick: handleClick
+    }, 'Click me')
+  },
+  
+}
+
+render(h(VueComponent, { onTap: () => alert('Bonjour!') }), app)
+```
+
+```js
+function setupComponent(instance) {
+  const { props, type } = instance.vnode
+  initProps(instance, props)
+
+  // 解析 setup 
+  let { setup } = type
+  if (setup) {
+    const setupContext = {
+      attrs: instance.attrs,
+      // 实现 emit
+      emit: (event, ...args) => {
+        const eventName = `on${event[0].toUpperCase() + event.slice(1)}`
+        const handler = instance.vnode.props[eventName]
+
+        handler && handler(...args)
+      }
+    }
+    const setupResult = setup(instance.props, setupContext)
+
+    if (isFunction(setupResult)) {
+      instance.render = setupResult
+    } else if (isObject(setupResult)) {
+      instance.setupState = proxyRefs(setupResult)
+    }
+  }
+
+  instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers)
+  const data = type.data
+  if (data) {
+    if (!isFunction(data)) return console.warn(`The data option must be a function`)
+    instance.data = reactive(data.call(instance.proxy))
+  }
+  if (!instance.render) {
+    instance.render = type.render
+  }
+}
+```
+
+### 实现slot
+
+### 生命周期实现原理
+
+#### 创建生命周期钩子
+
+#### 钩子调用
+
+
 ## 补充
 
 ### 位运算符 
