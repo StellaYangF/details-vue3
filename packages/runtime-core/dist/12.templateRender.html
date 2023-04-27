@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core template render</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { h, render, reactive, openBlock, createElementBlock, toRefs, createElementVNode } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    // import { render, h, Fragment } from './index.js'
+
+    const VueComponent = {
+      setup() {
+        const state = reactive({ name: 'Stella' })
+        setTimeout(() => {
+          state.name = 'Yang'
+        }, 1000)
+        return {
+          ...toRefs(state)
+        }
+      },
+      render(_ctx) {
+        return (openBlock(),createElementBlock('div',null,[
+            createElementVNode("h1", null, "Hello Stella"),
+            createElementVNode("span", null, toDisplayString(_ctx.name), 1 /* TEXT */)
+        ]))
+      }
+    }
+
+    // 此时生成的虚拟节点多出一个dynamicChildren属性。
+    // 这个就是block的作用，block可以收集所有后代动态节点。
+    // 这样后续更新时可以直接跳过静态节点，实现靶向更新
+
+    console.log(h(VueComponent))
+
+    render(h(VueComponent), app)
+    
+    
+</script>
+</body>
+</html> 

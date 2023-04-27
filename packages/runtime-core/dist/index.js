@@ -425,7 +425,7 @@ function setupComponent(instance) {
 }
 var currentInstance;
 var setCurrentInstance = (instance) => currentInstance = instance;
-var unsetCurrentInstance = (val = null) => currentInstance = null;
+var unsetCurrentInstance = (val = null) => currentInstance = val;
 
 // packages/runtime-core/src/scheduler.ts
 var queue = [];
@@ -616,6 +616,11 @@ function createRenderer(options) {
       }
     }
   };
+  const patchBlockChildren = (n1, n2) => {
+    for (let i = 0; i < n2.dynamicChildren; i++) {
+      patchElement(n1.dynamicChildren[i], n2.dynamicChildren[n2]);
+    }
+  };
   const patchChildren = (n1, n2, el, anchor) => {
     const c1 = n1.children;
     const c2 = n2.children;
@@ -649,8 +654,24 @@ function createRenderer(options) {
     const el = n2.el = n1.el;
     const oldProps = n1.props || {};
     const newProps = n2.props || {};
-    patchProps(oldProps, newProps, el);
-    patchChildren(n1, n2, el, null);
+    const { patchFlag } = n2;
+    if (patchFlag) {
+      if (patchFlag & 2 /* CLASS */) {
+        hostPatchProp(el, "class", null, newProps.class);
+      }
+      if (patchFlag & 1 /* TEXT */) {
+        if (n1.children !== n2.children) {
+          hostSetElementText(el, n2.children);
+        }
+      }
+    } else {
+      patchProps(oldProps, newProps, el);
+    }
+    if (n2.dynamicChildren) {
+      patchBlockChildren(n1, n2);
+    } else {
+      patchChildren(n1, n2, el, null);
+    }
   };
   const patch = (n1, n2, container, anchor = null) => {
     if (n1 === n2)
@@ -786,7 +807,7 @@ function render(vnode, container) {
 function isVNode(value) {
   return value ? value.__v_isVNode === true : false;
 }
-var createVNode = (type, props, children = null) => {
+var createVNode = (type, props, children = null, patchFlag) => {
   const shapeFlag = isString(type) ? 1 /* ELEMENT */ : isObject(type) ? 4 /* STATEFUL_COMPONENT */ : 0;
   const vnode = {
     __v_isVNode: true,
@@ -795,7 +816,8 @@ var createVNode = (type, props, children = null) => {
     key: props && props.key,
     el: null,
     children,
-    shapeFlag
+    shapeFlag,
+    patchFlag
   };
   if (children) {
     let type2 = 0;
@@ -808,6 +830,9 @@ var createVNode = (type, props, children = null) => {
       type2 = 8 /* TEXT_CHILDREN */;
     }
     vnode.shapeFlag |= type2;
+  }
+  if (currentBlock && patchFlag > 0) {
+    currentBlock.push(vnode);
   }
   return vnode;
 };
@@ -871,14 +896,42 @@ function getSequence(arr) {
   }
   return result;
 }
+var currentBlock = null;
+function openBlock() {
+  currentBlock = [];
+}
+function closeBlock() {
+  currentBlock = null;
+}
+function createElementBlock(type, props, children, patchFlag) {
+  return setupBlock(createVNode(type, props, children, patchFlag));
+}
+function setupBlock(vnode) {
+  vnode.dynamicChildren = currentBlock;
+  closeBlock();
+  return vnode;
+}
+function createTextVNode(text, flag = 0) {
+  return createVNode(Text, null, text, flag);
+}
+function toDisplayString(val) {
+  return isString(val) ? val : val == null ? "" : isObject(val) ? JSON.stringify(val) : String(val);
+}
 export {
   Fragment,
   ShapeFlags,
   Text,
+  closeBlock,
+  createElementBlock,
+  createVNode as createElementVNode,
   createRenderer,
+  createTextVNode,
   createVNode,
   h,
   isVNode,
-  render
+  openBlock,
+  render,
+  setupBlock,
+  toDisplayString
 };
 //# sourceMappingURL=index.js.map

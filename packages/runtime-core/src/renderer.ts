@@ -10,6 +10,7 @@ import { createComponentInstance, setupComponent } from "./component"
 import { ReactiveEffect } from "@vue/reactivity"
 import { queueJob } from "./scheduler"
 import { hasPropsChanged, updateProps } from "./componentProps"
+import { PatchFlags } from "./patchFlags"
 
 // >> 右移
 export const enum ShapeFlags {
@@ -276,6 +277,12 @@ export function createRenderer(options) {
     }
   }
 
+  const patchBlockChildren = (n1, n2) => {
+    for (let i = 0; i < n2.dynamicChildren; i++) {
+      patchElement(n1.dynamicChildren[i], n2.dynamicChildren[n2])
+    }
+  }
+
   const patchChildren = (n1, n2, el, anchor) => {
     const c1 = n1.children
     const c2 = n2.children
@@ -327,8 +334,26 @@ export function createRenderer(options) {
     const oldProps = n1.props || {}
     const newProps = n2.props || {}
 
-    patchProps(oldProps, newProps, el)
-    patchChildren(n1, n2, el, null)
+    // 根据patchFlag细化patch类型
+    const { patchFlag } = n2
+    if (patchFlag) {
+      if (patchFlag & PatchFlags.CLASS) {
+        hostPatchProp(el, 'class', null, newProps.class)
+      }
+      if (patchFlag & PatchFlags.TEXT) {
+        if (n1.children !== n2.children) {
+          hostSetElementText(el, n2.children)
+        }
+      }
+    } else {
+      patchProps(oldProps, newProps, el)
+    }
+
+    if (n2.dynamicChildren) {
+      patchBlockChildren(n1, n2)
+    } else {
+      patchChildren(n1, n2, el, null)
+    }
   }
 
   const patch = (n1, n2, container, anchor = null) => {
@@ -503,7 +528,7 @@ export function isVNode(value) {
  * @param children 三种类型：数组，文本，null
  * @returns 
  */
-export const createVNode = (type, props, children = null) => {
+export const createVNode = (type, props, children = null, patchFlag?) => {
   const shapeFlag = isString(type)
     ? ShapeFlags.ELEMENT
     : isObject(type)
@@ -517,7 +542,8 @@ export const createVNode = (type, props, children = null) => {
     key: props && props.key,
     el: null,
     children,
-    shapeFlag
+    shapeFlag,
+    patchFlag
   }
 
   if (children) {
@@ -532,6 +558,11 @@ export const createVNode = (type, props, children = null) => {
     }
 
     vnode.shapeFlag |= type // 见1是1
+  }
+
+  // dynamicChildren patchFlags
+  if (currentBlock && patchFlag > 0) {
+    currentBlock.push(vnode)
   }
 
   return vnode
@@ -620,24 +651,61 @@ function getSequence(arr: number[]): number[] {
  * 例如：[2, 3, 1, 5, 6, 8, 7, 9, 4]
  * 输出：[0, 1, 3, 4, 6, 7] 索引值 -> 数值 [2, 3, 5, 6, 9]
  * O(n log n)
- * 
+ *
  * 迭代arr流程：
  * 数值        value  下标  操作result                操作p
  * 2             2    0     无   [0]                    [2, 3, 1, 5, 6, 8, 7, 9, 4]
  * 2 3           3    1     追加 [0, 1]                 [2, 0, 1, 5, 6, 8, 7, 9, 4]
  * 1 3           1    2     替换2[2, 1]                 [2, 0, 1, 5, 6, 8, 7, 9, 4]
  * 1 3 5         5    3     追加 [2, 1, 3]              [2, 0, 1, 1, 6, 8, 7, 9, 4]
- * 1 3 5 6       6    4     追加 [2, 1, 3, 4]           [2, 0, 1, 5, 6, 8, 7, 9, 4] 
+ * 1 3 5 6       6    4     追加 [2, 1, 3, 4]           [2, 0, 1, 5, 6, 8, 7, 9, 4]
  * 1 3 5 6 8     8    5     追加 [2, 1, 3, 4, 5]        [2, 0, 1, 5, 6, 8, 7, 9, 4]
  * 1 3 5 6 7     7    6     替换8[2, 1, 3, 4, 6]        [2, 0, 1, 5, 6, 8, 7, 9, 4]
  * 1 3 5 6 7 9   9    7     追加 [2, 1, 3, 4, 6, 7]     [2, 0, 1, 5, 6, 8, 7, 6, 4]
  * 1 3 4 6 7 9   4    8     替换5[2, 1, 8, 4, 6, 7]     [2, 0, 1, 5, 6, 8, 7, 6, 1]
- * 
+ *
  * looping backwards result
  * 索引：[0, 1, 3, 4, 6, 7]
  * 数组值：[2, 3, 5, 6, 8, 9]
- * 
+ *
  * result 存放拿出的索引值
  * p 用于存放，比其小的那一项索引值。初始值是输入的 arr
  * 核心：下一项记录前一项中的索引。最后从后往前找
  */
+
+
+// 靶向更新实现
+export { createVNode as createElementVNode }
+
+let currentBlock = null
+export function openBlock() {
+  currentBlock = []
+}
+
+export function closeBlock() {
+  currentBlock = null
+}
+
+export function createElementBlock(type, props?, children?, patchFlag?) {
+  return setupBlock(createVNode(type, props, children, patchFlag))
+}
+
+export function setupBlock(vnode) {
+  vnode.dynamicChildren = currentBlock
+  closeBlock()
+  return vnode
+}
+
+export function createTextVNode(text: ' ', flag = 0) {
+  return createVNode(Text, null, text, flag)
+}
+
+export function toDisplayString(val) {
+  return isString(val)
+    ? val
+    : val == null
+      ? ''
+      : isObject(val)
+        ? JSON.stringify(val)
+        : String(val)
+}

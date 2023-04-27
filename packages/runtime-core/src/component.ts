@@ -82,4 +82,4 @@ export function setupComponent(instance) {
 export let currentInstance
 export const setCurrentInstance = instance => (currentInstance = instance)
 export const getCurrentInstance = () => currentInstance
-export const unsetCurrentInstance = (val = null) => currentInstance = null
+export const unsetCurrentInstance = (val = null) => currentInstance = val
