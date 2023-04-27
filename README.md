@@ -1928,6 +1928,69 @@ export const PublicInstanceProxyHandlers = {
 
 ![processComponent](./assets/processComponent.png)
 
+### 优化 updateComponent 
+
+属性更新逻辑抽离出来，slots 更新也会导致页面更新
+
+```js
+const shouldUpdateComponent = (n1, n2) => {
+  const { props: prevProps, children: prevChildren } = n1
+  const { props: nextProps, children: nextChildren } = n2
+
+  if (prevChildren || nextChildren) return true
+
+  if (prevProps === nextProps) return false
+
+  return hasPropsChanged(prevProps, nextProps)
+}
+
+const updateComponent = (n1, n2) => {
+  const instance = (n2.component = n1.component)
+  if (shouldUpdateComponent(n1, n2)) {
+    instance.next = n2
+    instance.update()
+  }
+}
+```
+
+```js
+function updateProps(prevProps, nextProps) {
+  if (hasPropsChanged(prevProps, nextProps)) {
+    for (const key in nextProps) {
+      // 数据更新，触发
+      prevProps[key] = nextProps[key]
+    }
+    for (const key in prevProps) {
+      if (!(key in nextProps)) {
+        delete prevProps[key]
+      }
+    }
+  }
+}
+
+function updateComponentPreRender(instance, next) {
+  instance.next = null
+  instance.vnode = next
+  updateProps(instance.props, next.props)
+}
+
+const componentUpdateFn = () => {
+  if (!instance.isMounted) {
+    // ...
+  } else {
+    // updateComponent 属性变化或slots变化，均手动触发 instance.update
+    let { next } = instance
+    if (next) {
+      updateComponentPreRender(instance, next)
+    }
+
+    const subTree = render.call(instance.proxy, instance.proxy)
+    patch(instance.subTree, subTree, container, anchor)
+    instance.subTree = subTree
+  }
+}
+```
+
 ## 补充
 
 ### 位运算符 
