@@ -2222,18 +2222,78 @@ export function setupComponent(instance) {
 
 component.ts
 ```js
+export const setCurrentInstance = instance => (currentInstance = instance)
+export const getCurrentInstance = () => currentInstance
+export const unsetCurrentInstance = (val = null) => currentInstance = null
 ```
 
 ```js
+setCurrentInstance(instance)
+const setupResult = setup(instance.props, setupContext)
+unsetCurrentInstance(null)
 ```
 
 #### 创建生命周期钩子
 apiLifecycle.ts
 ```js
+import { currentInstance, setCurrentInstance } from "./component";
+
+export const enum LifecycleHooks {
+  BEFORE_MOUNT = 'bm',
+  MOUNTED = 'm',
+  BEFORE_UPDATE = 'bu',
+  UPDATED = 'u'
+}
+
+function createHook(type) {
+  return (hook, target = currentInstance) => {
+    if (target) {
+      const hooks = target[type] || (target[type] = [])
+      const wrappedHook = () => {
+        setCurrentInstance(target)
+        hook.call(target)
+        setCurrentInstance(null)
+      }
+      hooks.push(wrappedHook)
+    }
+  }
+}
+
+export const onBeforeMount = createHook(LifecycleHooks.BEFORE_MOUNT)
+export const onMounted = createHook(LifecycleHooks.MOUNTED)
+export const onBeforeUpdate = createHook(LifecycleHooks.BEFORE_UPDATE)
+export const updated = createHook(LifecycleHooks.UPDATED)
 ```
 
 #### 钩子调用
 
+```js
+const componentUpdateFn = () => {
+  if (!instance.isMounted) {
+
+    const { bm, m } = instance
+    bm && invokeArrayFns(bm)
+
+    const subTree = render.call(instance.proxy, instance.proxy)
+    patch(null, subTree, container, anchor)
+    m && invokeArrayFns(m)
+    instance.subTree = subTree
+    instance.isMounted = true
+  } else {
+    // updateComponent 属性变化或slots变化，均手动触发 instance.update
+    // 运行的是当前的 effect，再次触发此 effect。跳过循环操作（activeEffect !== effect）。
+    let { next, bu, u } = instance
+    if (next) {
+      next && updateComponentPreRender(instance, next)
+    }
+    bu && invokeArrayFns(bu)
+    const subTree = render.call(instance.proxy, instance.proxy)
+    patch(instance.subTree, subTree, container, anchor)
+    u && invokeArrayFns(u)
+    instance.subTree = subTree
+  }
+}
+```
 
 ## 补充
 
