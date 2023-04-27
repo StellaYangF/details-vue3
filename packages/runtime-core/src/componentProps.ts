@@ -2,7 +2,8 @@ import { reactive } from "@vue/reactivity"
 import { hasOwn } from "@vue/shared"
 
 export const publicPropertiesMap = {
-  $attrs: i => i.attrs
+  $attrs: i => i.attrs,
+  $slots: i => i.slots
 }
 
 export function initProps(
@@ -39,7 +40,7 @@ export const PublicInstanceProxyHandlers = {
     } else if (setupState && hasOwn(setupState, key)) {
       return setupState[key]
     }
-    // $attrs
+    // $attrs, $slots
     const publicGetter = publicPropertiesMap[key]
     if (publicGetter) {
       return publicGetter(target)

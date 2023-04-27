@@ -521,6 +521,8 @@ export const createVNode = (type, props, children = null) => {
     let type = 0
     if (isArray(children)) {
       type = ShapeFlags.ARRAY_CHILDREN
+    } else if (isObject(children)) {// slots
+      type = ShapeFlags.SLOTS_CHILDREN
     } else {
       children = String(children)
       type = ShapeFlags.TEXT_CHILDREN

@@ -276,7 +276,8 @@ function proxyRefs(objectWithRefs) {
 
 // packages/runtime-core/src/componentProps.ts
 var publicPropertiesMap = {
-  $attrs: (i) => i.attrs
+  $attrs: (i) => i.attrs,
+  $slots: (i) => i.slots
 };
 function initProps(instance, rawProps) {
   const props = {};
@@ -369,7 +370,8 @@ function createComponentInstance(vnode) {
     props: EMPTY_OBJ,
     // 父组件传入的 props
     attrs: EMPTY_OBJ,
-    // 子组件没有定义 props,会放入 $attrs中
+    // 子组件没有定义的 props,会放入 $attrs中
+    slots: EMPTY_OBJ,
     proxy: null,
     // 代理对象
     propsOptions: vnode.type.props
@@ -377,9 +379,15 @@ function createComponentInstance(vnode) {
   };
   return instance;
 }
+function initSlots(instance, children) {
+  if (instance.vnode.shapeFlag & 32 /* SLOTS_CHILDREN */) {
+    instance.slots = children;
+  }
+}
 function setupComponent(instance) {
-  const { props, type } = instance.vnode;
+  const { props, type, children } = instance.vnode;
   initProps(instance, props);
+  initSlots(instance, children);
   let { setup } = type;
   if (setup) {
     const setupContext = {
@@ -778,6 +786,8 @@ var createVNode = (type, props, children = null) => {
     let type2 = 0;
     if (isArray(children)) {
       type2 = 16 /* ARRAY_CHILDREN */;
+    } else if (isObject(children)) {
+      type2 = 32 /* SLOTS_CHILDREN */;
     } else {
       children = String(children);
       type2 = 8 /* TEXT_CHILDREN */;

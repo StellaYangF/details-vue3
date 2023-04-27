@@ -2,6 +2,7 @@ import { EMPTY_OBJ, isFunction, isObject } from "@vue/shared"
 import { createAppContext } from "./apiCreateApp"
 import { PublicInstanceProxyHandlers, initProps } from "./componentProps"
 import { proxyRefs, reactive } from "@vue/reactivity"
+import { ShapeFlags } from "./renderer"
 
 const emptyAppContext = createAppContext()
 
@@ -24,7 +25,8 @@ export function createComponentInstance(vnode) {
     // state
     data: EMPTY_OBJ,
     props: EMPTY_OBJ, // 父组件传入的 props
-    attrs: EMPTY_OBJ, // 子组件没有定义 props,会放入 $attrs中
+    attrs: EMPTY_OBJ, // 子组件没有定义的 props,会放入 $attrs中
+    slots: EMPTY_OBJ,
     proxy: null, // 代理对象
     propsOptions: vnode.type.props // VueComponent.type 为一个对象
   }
@@ -32,9 +34,16 @@ export function createComponentInstance(vnode) {
   return instance
 }
 
+function initSlots(instance, children) {
+  if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
+    instance.slots = children
+  }
+}
+
 export function setupComponent(instance) {
-  const { props, type } = instance.vnode
+  const { props, type, children } = instance.vnode
   initProps(instance, props)
+  initSlots(instance, children)
 
   // 解析 setup 
   let { setup } = type

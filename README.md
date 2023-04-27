@@ -2148,6 +2148,75 @@ function setupComponent(instance) {
 
 ### 实现slot
 
+```js
+const Component= {
+  render() {
+    return h(Fragment, [
+      h('div', [this.$slots.header()]),
+      h('div', [this.$slots.body()]),
+      h('div', [this.$slots.footer()])
+    ])
+  }
+}
+
+const VueComponent = {
+  setup() {
+    return () =>h(Component, null, {
+        header: () => h('p', 'Header'),
+        body: () => h('p', 'Body'),
+        footer: () => h('p', 'Footer'),
+      })
+  },
+  
+}
+
+render(h(VueComponent), app)
+```
+
+```js
+export const createVNode = (type, props, children = null) => {
+
+  if (children) {
+    let type = 0
+    if (isArray(children)) {
+      type = ShapeFlags.ARRAY_CHILDREN
+    } else if (isObject(children)) {// slots
+      type = ShapeFlags.SLOTS_CHILDREN
+    } else {
+      children = String(children)
+      type = ShapeFlags.TEXT_CHILDREN
+    }
+
+    vnode.shapeFlag |= type // 见1是1
+  }
+
+  return vnode
+}
+```
+
+```js
+export const publicPropertiesMap = {
+  $attrs: i => i.attrs,
+  $slots: i => i.slots
+}
+```
+
+```js
+function initSlots(instance, children) {
+  if (instance.vnode.shapeFlag & ShapeFlags.SLOTS_CHILDREN) {
+    instance.slots = children
+  }
+}
+```
+
+```js
+export function setupComponent(instance) {
+  const { props, type, children } = instance.vnode
+  initProps(instance, props)
+  initSlots(instance, children)
+}
+```
+
 ### 生命周期实现原理
 
 #### 创建生命周期钩子

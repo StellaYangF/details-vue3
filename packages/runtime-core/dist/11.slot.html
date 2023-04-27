@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core slot</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { h, render, Fragment } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    import { render, h, Fragment } from './index.js'
+
+    const Component= {
+      render() {
+        return h(Fragment, [
+          h('div', [this.$slots.header()]),
+          h('div', [this.$slots.body()]),
+          h('div', [this.$slots.footer()])
+        ])
+      }
+    }
+
+    const VueComponent = {
+      setup() {
+        return () =>h(Component, null, {
+            header: () => h('p', 'Header'),
+            body: () => h('p', 'Body'),
+            footer: () => h('p', 'Footer'),
+          })
+      },
+      
+    }
+
+    render(h(VueComponent), app)
+    
+    
+</script>
+</body>
+</html> 
