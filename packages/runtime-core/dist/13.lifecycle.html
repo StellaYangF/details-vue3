@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>runtime-core lifecycle</title>
+  <style>
+    #app {
+     padding: 30px;
+     line-height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    // import { h, render, ref, onMounted, onBeforeMount, Text, onUpdated, onBeforeUpdate } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    import { ref, render, h, onMounted, onBeforeMount, Text, onUpdated, onBeforeUpdate } from './index.js'
+    // import { ref } from '../../reactivity/dist/index.js'
+
+    const VueComponent = {
+      setup() {
+        const text = ref('hello')
+
+        // 生命周期函数，打印顺序
+        // onBeforeMount
+        // render
+        // onMounted
+        // onBeforeUpdate
+        // render
+        // onUpdated
+
+
+        onMounted(() => console.log('mounted'))
+        onBeforeMount(() => console.log('onBeforeMount'))
+        onUpdated(() => console.log('onUpdated'))
+        onBeforeUpdate(() => console.log('onBeforeUpdate'))
+
+
+        setTimeout(() => text.value = 'Bonjour!')
+        return {
+          text
+        }
+      },
+      render(proxy) {
+        console.log('render')
+        return h('div', [
+          proxy.$slots.header(),
+          proxy.$slots.default(proxy.text), // 匿名动态插槽
+          proxy.$slots.footer()
+          ])
+      }
+    }
+
+
+    render(h(VueComponent, {}, {
+      header: () => h('p', 'header'),
+      default: text => h('p', text),
+      footer: () => h('p', 'footer'),
+    }), app)
+    
+    
+</script>
+</body>
+</html> 

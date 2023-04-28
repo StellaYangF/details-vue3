@@ -4,7 +4,7 @@
 `vue3` 是基于 `Proxy` 实现，而 `vue2` 是基于 `Object.defineProperty``。注意，Proxy` 搭配 `Reflect` 实现，用以解决 `this` 调用时指向问题。
 
 ```js
-cconst school = {
+const school = {
   students: 100,
   teachers: 200,
   get total() {

@@ -79,6 +79,7 @@ export function setupComponent(instance) {
   }
 }
 
+// 用户可获取相应的组件实例
 export let currentInstance
 export const setCurrentInstance = instance => (currentInstance = instance)
 export const getCurrentInstance = () => currentInstance

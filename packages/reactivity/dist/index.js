@@ -5,9 +5,7 @@ function isObject(val) {
 function isFunction(val) {
   return typeof val === "function";
 }
-function isArray(val) {
-  return Array.isArray(val);
-}
+var isArray = Array.isArray;
 
 // packages/reactivity/src/effect.ts
 var activeEffect = null;

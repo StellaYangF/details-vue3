@@ -174,6 +174,13 @@ var ReactiveEffect = class {
     }
   }
 };
+function effect(fn, options = {}) {
+  const _effect = new ReactiveEffect(fn, options.scheduler);
+  _effect.run();
+  const runner = _effect.run.bind(_effect);
+  runner.effect = _effect;
+  return runner;
+}
 function track(target, type, key) {
   if (activeEffect) {
     let depsMap = targetMap.get(target);
@@ -201,22 +208,34 @@ function trigger(target, type, key, value, oldValue) {
   }
   const dep = depsMap.get(key) || /* @__PURE__ */ new Set();
   const effects = [...dep];
-  effects && effects.forEach((effect) => {
-    if (effect !== activeEffect) {
-      if (effect.scheduler) {
-        effect.scheduler();
+  effects && effects.forEach((effect2) => {
+    if (effect2 !== activeEffect) {
+      if (effect2.scheduler) {
+        effect2.scheduler();
       } else {
-        effect.run();
+        effect2.run();
       }
     }
   });
 }
-function cleanupEffect(effect) {
-  const { deps } = effect;
+function triggerEffects(dep) {
+  const effects = [...dep];
+  effects && effects.forEach((effect2) => {
+    if (effect2 !== activeEffect) {
+      if (effect2.scheduler) {
+        effect2.scheduler();
+      } else {
+        effect2.run();
+      }
+    }
+  });
+}
+function cleanupEffect(effect2) {
+  const { deps } = effect2;
   for (let i = 0; i < deps.length; i++) {
-    deps[i].delete(effect);
+    deps[i].delete(effect2);
   }
-  effect.deps.length = 0;
+  effect2.deps.length = 0;
 }
 
 // packages/reactivity/src/baseHandlers.ts
@@ -243,6 +262,10 @@ var mutableHandlers = {
 };
 
 // packages/reactivity/src/reactive.ts
+var ReactiveFlags = /* @__PURE__ */ ((ReactiveFlags2) => {
+  ReactiveFlags2["IS_REACTIVE"] = "__v_isReactive";
+  return ReactiveFlags2;
+})(ReactiveFlags || {});
 var reactiveMap = /* @__PURE__ */ new WeakMap();
 function reactive(target) {
   if (!isObject(target))
@@ -258,8 +281,150 @@ function reactive(target) {
   reactiveMap.set(target, proxy);
   return proxy;
 }
+function isReactive(target) {
+  return target["__v_isReactive" /* IS_REACTIVE */];
+}
+
+// packages/reactivity/src/apiWatch.ts
+function watch(source, cb, options) {
+  doWatch(source, cb, options);
+}
+function watchEffect(source, options) {
+  doWatch(source, null, options);
+}
+function doWatch(source, cb, options) {
+  let getter;
+  if (isReactive(source)) {
+    getter = traverse(source);
+  } else if (isFunction(source)) {
+    getter = source;
+  }
+  let oldValue;
+  let cleanup;
+  const onCleanup = (fn) => {
+    cleanup = fn;
+  };
+  const scheduler = () => {
+    if (cleanup)
+      cleanup();
+    if (cb) {
+      const newValue = effect2.run();
+      cb(newValue, oldValue, onCleanup);
+      oldValue = newValue;
+    } else {
+      effect2.run();
+    }
+  };
+  const effect2 = new ReactiveEffect(getter, scheduler);
+  oldValue = effect2.run();
+}
+function traverse(value, seen = /* @__PURE__ */ new Set()) {
+  if (!isObject) {
+    return value;
+  }
+  if (seen.has(value)) {
+    return value;
+  }
+  seen.add(value);
+  for (let key in value) {
+    traverse(value[key], seen);
+  }
+  return value;
+}
+
+// packages/reactivity/src/computed.ts
+var ComputedRefImpl = class {
+  constructor(getter, setter) {
+    this.setter = setter;
+    this._dirty = true;
+    this.effect = new ReactiveEffect(getter, () => {
+      this._dirty = true;
+      triggerEffects(this.dep);
+    });
+  }
+  get value() {
+    if (activeEffect) {
+      trackEffects(this.dep || (this.dep = /* @__PURE__ */ new Set()));
+    }
+    if (this._dirty) {
+      this._value = this.effect.run();
+      this._dirty = false;
+    }
+    return this._value;
+  }
+  set value(newVal) {
+    this.setter(newVal);
+  }
+};
+function computed(getterOptions) {
+  let getter;
+  let setter;
+  if (isFunction(getterOptions)) {
+    getter = getterOptions;
+  } else {
+    getter = getterOptions.get;
+    setter = getterOptions.set;
+  }
+  return new ComputedRefImpl(getter, setter);
+}
 
 // packages/reactivity/src/ref.ts
+var RefImpl = class {
+  constructor(rawValue, _shallow) {
+    this.rawValue = rawValue;
+    this._shallow = _shallow;
+    this.__v_isRef = true;
+    this._value = _shallow ? rawValue : toReactive(rawValue);
+  }
+  get value() {
+    if (activeEffect) {
+      trackEffects(this.dep || (this.dep = /* @__PURE__ */ new Set()));
+    }
+    return this._value;
+  }
+  set value(newVal) {
+    if (newVal !== this.rawValue) {
+      this._value = newVal;
+      this.rawValue = this._shallow ? newVal : toReactive(newVal);
+      triggerEffects(this.dep);
+    }
+  }
+};
+function toReactive(value) {
+  return isObject(value) ? reactive(value) : value;
+}
+function createRef(rawValue, shallow) {
+  return new RefImpl(rawValue, shallow);
+}
+function ref(value) {
+  return createRef(value, false);
+}
+function shallowRef(value) {
+  return createRef(value, true);
+}
+var ObjectReeImpl = class {
+  constructor(_object, _key) {
+    this._object = _object;
+    this._key = _key;
+    this.__v_isRef = true;
+  }
+  get value() {
+    return this._object[this._key];
+  }
+  set value(newVal) {
+    this._object[this._key] = newVal;
+  }
+};
+function toRef(object, key) {
+  return new ObjectReeImpl(object, key);
+}
+function toRefs(object) {
+  const ref2 = isArray(object) ? new Array(object.length) : {};
+  for (const key in object) {
+    ref2[key] = toRef(object, key);
+  }
+  return ref2;
+}
 function proxyRefs(objectWithRefs) {
   return new Proxy(objectWithRefs, {
     get(target, key, receiver) {
@@ -759,12 +924,12 @@ function createRenderer(options) {
         instance.subTree = subTree;
       }
     };
-    const effect = instance.effect = new ReactiveEffect(
+    const effect2 = instance.effect = new ReactiveEffect(
       componentUpdateFn,
       () => queueJob(update)
       // 控制 componentUpdateFn 执行时机，可以批处理
     );
-    const update = instance.update = effect.run.bind(effect);
+    const update = instance.update = effect2.run.bind(effect2);
     update();
   };
   function updateComponentPreRender(instance, next) {
@@ -917,21 +1082,71 @@ function createTextVNode(text, flag = 0) {
 function toDisplayString(val) {
   return isString(val) ? val : val == null ? "" : isObject(val) ? JSON.stringify(val) : String(val);
 }
+
+// packages/runtime-core/src/apiLifecycle.ts
+var LifecycleHooks = /* @__PURE__ */ ((LifecycleHooks2) => {
+  LifecycleHooks2["BEFORE_MOUNT"] = "bm";
+  LifecycleHooks2["MOUNTED"] = "m";
+  LifecycleHooks2["BEFORE_UPDATE"] = "bu";
+  LifecycleHooks2["UPDATED"] = "u";
+  return LifecycleHooks2;
+})(LifecycleHooks || {});
+function createHook(type) {
+  return (hook, target = currentInstance) => {
+    if (target) {
+      const hooks = target[type] || (target[type] = []);
+      const wrappedHook = () => {
+        setCurrentInstance(target);
+        hook.call(target);
+        setCurrentInstance(null);
+      };
+      hooks.push(wrappedHook);
+    }
+  };
+}
+var onBeforeMount = createHook("bm" /* BEFORE_MOUNT */);
+var onMounted = createHook("m" /* MOUNTED */);
+var onBeforeUpdate = createHook("bu" /* BEFORE_UPDATE */);
+var onUpdated = createHook("u" /* UPDATED */);
 export {
   Fragment,
+  LifecycleHooks,
+  ReactiveEffect,
+  ReactiveFlags,
   ShapeFlags,
   Text,
+  activeEffect,
   closeBlock,
+  computed,
   createElementBlock,
   createVNode as createElementVNode,
   createRenderer,
   createTextVNode,
   createVNode,
+  doWatch,
+  effect,
   h,
+  isReactive,
   isVNode,
+  onBeforeMount,
+  onBeforeUpdate,
+  onMounted,
+  onUpdated,
   openBlock,
+  proxyRefs,
+  reactive,
+  ref,
   render,
   setupBlock,
-  toDisplayString
+  shallowRef,
+  toDisplayString,
+  toRef,
+  toRefs,
+  track,
+  trackEffects,
+  trigger,
+  triggerEffects,
+  watch,
+  watchEffect
 };
 //# sourceMappingURL=index.js.map
