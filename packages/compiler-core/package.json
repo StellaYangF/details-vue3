@@ -1,0 +1,18 @@
+{
+  "name": "@vue/compiler-core",
+  "version": "1.0.0",
+  "description": "@vue/compiler-core",
+  "main": "index.js",
+  "module": "dist/compiler-core.esm-bundler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "buildOptions": {
+    "name": "VueCompilerCore",
+    "compat": true,
+    "formats": [
+      "esm-bundler",
+      "cjs"
+    ]
+  }
+}
