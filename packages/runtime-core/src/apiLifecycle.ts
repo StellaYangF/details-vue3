@@ -11,6 +11,7 @@ function createHook(type) {
   return (hook, target = currentInstance) => {
     if (target) {
       const hooks = target[type] || (target[type] = [])
+      // AOP wrap source hook
       const wrappedHook = () => {
         setCurrentInstance(target)
         hook.call(target)
