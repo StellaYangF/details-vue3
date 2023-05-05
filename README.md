@@ -2296,7 +2296,7 @@ const componentUpdateFn = () => {
 ```
 
 ## 模板编译原理
-Diff 算法无法避免新旧虚拟 DOM 中无用的比较操作，通过 patchFlags 来标记动态内容，可以实现快速 diff算法
+Diff 算法无法避免新旧虚拟 DOM 中无用的比较操作，通过 patchFlags 来标记动态内容，实现靶向更新，可快速 diff 算法
 ```html
 <div>
   <h1>Hello Stella</h1>
@@ -2319,8 +2319,11 @@ export function render(_ctx, _cache, $props, $setup, $data, $options) {
 // Check the console for the AST
 ```
 
-> 该 render 函数生成的 vnode，多出一个 dynamicChildren（由block收集所有后代动态节点）。
-> 这样后续更新时可以直接跳过静态节点，实现靶向更新
+- 该 render 函数生成的 vnode，多出一个 `dynamicChildren`（由block收集所有后代动态节点）。
+- 性能可被大幅度提升,从 tree 级别的比对，变成了线性结构比对。
+- 这样后续更新时可以直接跳过静态节点，实现靶向更新。
+- `.vue` 文件编写的 `template` 组件，会利用此方式做优化。
+- `.jsx` 文件，则无法享受此优化。除非是自己手动编写 _openBlock 代码段。
 
 ### PatchFlags动态标识
 ```js
