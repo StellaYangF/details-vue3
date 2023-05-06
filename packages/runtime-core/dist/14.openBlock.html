@@ -15,27 +15,70 @@
 <body>
   <div id="app"></div>
   <script type="module">
-    import { h, render, reactive, toRefs, createElementVNode as _createElementVNode, toDisplayString as _toDisplayString, openBlock as _openBlock, createElementBlock as _createElementBlock } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
-
+    // import { h, render, reactive, toRefs, createElementVNode as _createElementVNode, toDisplayString as _toDisplayString, openBlock as _openBlock, createElementBlock as _createElementBlock } from "../../../../node_modules/@vue/runtime-dom/dist/runtime-dom.esm-browser.js"
+    import { 
+      Fragment as _Fragment,
+      h,
+      render,
+      reactive,
+      toRefs,
+      createElementVNode as _createElementVNode,
+      toDisplayString as _toDisplayString,
+      openBlock as _openBlock,
+      createElementBlock as _createElementBlock,
+      renderList as _renderList
+    } from "./index.js"
     const VueComponent = {
       setup() {
-        const state = reactive({ name: 'Stella', age: 18 })
-        setTimeout(() => state.name = 'Yang', 1000)
+        const state = reactive({ name: 'Stella', age: 18, flag: true, hobbies: [
+          "dance",
+          "sports",
+          "piano"
+        ] })
+        setTimeout(() => {
+          state.flag = false
+          state.name = "Yang"
+        }, 1000)
         return {
           ...toRefs(state)
         }
       },
 
+      // example 1
+      // render(_ctx, _cache, $props, $setup, $data, $options) {
+      //   const vnode = (_openBlock(), _createElementBlock("div", null, [
+      //     _createElementVNode("div", null, "hello Stella"),
+      //     _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */),
+      //     _createElementVNode("div", null, [
+      //       _createElementVNode("span", null, _toDisplayString(_ctx.age), 1 /* TEXT */)
+      //     ])
+      //   ]))
+      //   console.log(vnode)
+      //   return vnode
+      // }
+
+      // example 2: v-if
+      // render(_ctx, _cache, $props, $setup, $data, $options) {
+      //   const vnode = (_openBlock(), _createElementBlock("div", null, [
+      //     (_ctx.flag)
+      //       ? (_openBlock(), _createElementBlock("div", { key: 0 }, [
+      //           _createElementVNode("span", null, _toDisplayString(_ctx.age), 1 /* TEXT */)
+      //         ]))
+      //       : (_openBlock(), _createElementBlock("div", { key: 1 }, [
+      //           _createElementVNode("p", null, [
+      //             _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */)
+      //           ])
+      //         ]))
+      //   ]))
+      //   console.log(vnode)
+      //   return vnode
+      // }
+
+      // example 3: v-for
       render(_ctx, _cache, $props, $setup, $data, $options) {
-        const vnode = (_openBlock(), _createElementBlock("div", null, [
-          _createElementVNode("div", null, "hello Stella"),
-          _createElementVNode("span", null, _toDisplayString(_ctx.name), 1 /* TEXT */),
-          _createElementVNode("div", null, [
-            _createElementVNode("span", null, _toDisplayString(_ctx.age), 1 /* TEXT */)
-          ])
-        ]))
-        console.log(vnode)
-        return vnode
+        return (_openBlock(true), _createElementBlock(_Fragment, null, _renderList(_ctx.hobbies, (item) => {
+          return (_openBlock(), _createElementBlock("div", null, _toDisplayString(item), 1 /* TEXT */))
+        }), 256 /* UNKEYED_FRAGMENT */))
       }
     }
 

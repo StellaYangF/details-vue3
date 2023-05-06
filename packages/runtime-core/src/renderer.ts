@@ -3,7 +3,7 @@
 // 位运算比运算快，常见三种
 // << 左移运算符（二进制补位0，后边数字移动位数）
 
-import { EMPTY_OBJ, invokeArrayFns, isArray, isObject, isString } from "@vue/shared"
+import { EMPTY_OBJ, invokeArrayFns } from "@vue/shared"
 import { renderOptions } from "@vue/runtime-dom"
 import { Fragment, Text } from "./vnode"
 import { createComponentInstance, setupComponent } from "./component"
@@ -255,7 +255,6 @@ export function createRenderer(options) {
 
       // 实现二：最长递增子序列 [5, 4, 3, 0]
       const increasingNewIndexSequence = getSequence(newIndexToOldIndexMap);
-      console.log(increasingNewIndexSequence)
       j = increasingNewIndexSequence.length - 1;
       for (i = toBePatched - 1; i >= 0; i--) {
         let currentIndex = i + s2; // 找到h的索引
@@ -518,78 +517,6 @@ export function render(vnode, container) {
   renderer.render(vnode, container)
 }
 
-export function isVNode(value) {
-  return value ? value.__v_isVNode === true : false
-}
-
-/**
- * @param type 
- * @param props 
- * @param children 三种类型：数组，文本，null
- * @returns 
- */
-export const createVNode = (type, props, children = null, patchFlag?) => {
-  const shapeFlag = isString(type)
-    ? ShapeFlags.ELEMENT
-    : isObject(type)
-      ? ShapeFlags.STATEFUL_COMPONENT
-      : 0
-
-  const vnode = {
-    __v_isVNode: true,
-    type,
-    props,
-    key: props && props.key,
-    el: null,
-    children,
-    shapeFlag,
-    patchFlag
-  }
-
-  if (children) {
-    let type = 0
-    if (isArray(children)) {
-      type = ShapeFlags.ARRAY_CHILDREN
-    } else if (isObject(children)) {// slots
-      type = ShapeFlags.SLOTS_CHILDREN
-    } else {
-      children = String(children)
-      type = ShapeFlags.TEXT_CHILDREN
-    }
-
-    vnode.shapeFlag |= type // 见1是1
-  }
-
-  // dynamicChildren patchFlags
-  if (currentBlock && patchFlag > 0) {
-    currentBlock.push(vnode)
-  }
-
-  return vnode
-}
-
-export function h(type, propsOrChildren?, children?) {
-  const l = arguments.length
-  if (l === 2) {
-    if (isObject(propsOrChildren) && !isArray(propsOrChildren)) {
-      if (isVNode(propsOrChildren)) {
-        return createVNode(type, null, [propsOrChildren])
-      }
-      return createVNode(type, propsOrChildren)
-    } else {
-      return createVNode(type, null, propsOrChildren)
-    }
-  } else {
-    if (l > 3) {
-      children = Array.prototype.slice.call(arguments, 2)
-    } else if (l === 3 && isVNode(children)) {
-      // 子元素是虚拟节点，包一层
-      children = [children]
-    }
-    return createVNode(type, propsOrChildren, children)
-  }
-}
-
 // https://en.wikipedia.org/wiki/Longest_increasing_subsequence
 // 最长递增子序列
 // 二分查找 + 贪心算法
@@ -672,40 +599,3 @@ function getSequence(arr: number[]): number[] {
  * p 用于存放，比其小的那一项索引值。初始值是输入的 arr
  * 核心：下一项记录前一项中的索引。最后从后往前找
  */
-
-
-// 靶向更新实现
-export { createVNode as createElementVNode }
-
-let currentBlock = null
-export function openBlock() {
-  currentBlock = []
-}
-
-export function closeBlock() {
-  currentBlock = null
-}
-
-export function createElementBlock(type, props?, children?, patchFlag?) {
-  return setupBlock(createVNode(type, props, children, patchFlag))
-}
-
-export function setupBlock(vnode) {
-  vnode.dynamicChildren = currentBlock
-  closeBlock()
-  return vnode
-}
-
-export function createTextVNode(text: ' ', flag = 0) {
-  return createVNode(Text, null, text, flag)
-}
-
-export function toDisplayString(val) {
-  return isString(val)
-    ? val
-    : val == null
-      ? ''
-      : isObject(val)
-        ? JSON.stringify(val)
-        : String(val)
-}
