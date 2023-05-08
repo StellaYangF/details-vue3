@@ -22,7 +22,7 @@ function parseChildren(context) {
     const s = context.source;
     let node;
     if (s.startsWith("{{")) {
-      node = {};
+      node = parseInterpolation(context);
     } else if (s[0] === "<") {
       node = {};
     }
@@ -61,30 +61,63 @@ function parseTextData(context, endIndex) {
   advanceBy(context, endIndex);
   return rawText;
 }
-function advanceBy(context, endIndex) {
+function advanceBy(context, numberOfCharacters) {
   const s = context.source;
-  advancePositionWithMutation(context, s, endIndex);
-  context.source = s.slice(endIndex);
+  advancePositionWithMutation(context, s, numberOfCharacters);
+  context.source = s.slice(numberOfCharacters);
 }
-function advancePositionWithMutation(context, s, endIndex) {
+function advancePositionWithMutation(pos, source, numberOfCharacters) {
   let linesCount = 0;
   let linePos = -1;
-  for (let i = 0; i < endIndex; i++) {
-    if (s.charCodeAt(i) === 10) {
+  for (let i = 0; i < numberOfCharacters; i++) {
+    if (source.charCodeAt(i) === 10) {
       linesCount++;
       linePos = i;
     }
   }
-  context.offset += endIndex;
-  context.line += linesCount;
-  context.column = linePos === -1 ? context.column + endIndex : endIndex - linePos;
+  pos.offset += numberOfCharacters;
+  pos.line += linesCount;
+  pos.column = linePos === -1 ? pos.column + numberOfCharacters : numberOfCharacters - linePos;
+  return pos;
 }
-function getSelection(context, start) {
-  const end = getCursor(context);
+function getSelection(context, start, end) {
+  end = end || getCursor(context);
   return {
     start,
     end,
     source: context.originalSource.slice(start.offset, end.offset)
+  };
+}
+function parseInterpolation(context) {
+  const [open, close] = ["{{", "}}"];
+  const closeIndex = context.source.indexOf(close, open.length);
+  if (closeIndex === -1) {
+    return void 0;
+  }
+  const start = getCursor(context);
+  advanceBy(context, open.length);
+  const innerStart = getCursor(context);
+  const innerEnd = getCursor(context);
+  const rawContentLength = closeIndex - open.length;
+  const rawContent = context.source.slice(0, rawContentLength);
+  const preTrimContent = parseTextData(context, rawContentLength);
+  const content = preTrimContent.trim();
+  const startOffset = preTrimContent.indexOf(content);
+  if (startOffset > 0) {
+    advancePositionWithMutation(innerStart, rawContent, startOffset);
+  }
+  const endOffset = rawContentLength - (preTrimContent.length - content.length - startOffset);
+  advancePositionWithMutation(innerEnd, rawContent, endOffset);
+  advanceBy(context, close.length);
+  return {
+    type: 5 /* INTERPOLATION */,
+    content: {
+      type: 4 /* SIMPLE_EXPRESSION */,
+      isStatic: false,
+      content,
+      loc: getSelection(context, innerStart, innerEnd)
+    },
+    loc: getSelection(context, start)
   };
 }
 
@@ -95,6 +128,7 @@ function transform(root) {
 // packages/compiler-core/src/compile.ts
 function baseCompile(template) {
   const ast = baseParse(template);
+  console.log(ast);
   transform(ast);
   return generate(ast);
 }
