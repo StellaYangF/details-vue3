@@ -1,1 +1,1 @@
-export { baseCompile } from './compile'
+export { baseCompile as compile } from './compile'
