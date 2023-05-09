@@ -28,6 +28,7 @@ export function baseParse(content: string) {
 function parseChildren(
   context: ParserContext
 ): TemplateChildNode[] {
+  debugger
   const nodes: TemplateChildNode[] = []
 
   while (!isEnd(context)) {
@@ -39,12 +40,10 @@ function parseChildren(
       node = parseElement(context)
     }
     if (!node) {
-      // parseText
       node = parseText(context)
     }
 
     nodes.push(node)
-    break
   }
 
   return nodes

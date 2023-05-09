@@ -17,6 +17,7 @@ function baseParse(content) {
   return parseChildren(context);
 }
 function parseChildren(context) {
+  debugger;
   const nodes = [];
   while (!isEnd(context)) {
     const s = context.source;
@@ -30,7 +31,6 @@ function parseChildren(context) {
       node = parseText(context);
     }
     nodes.push(node);
-    break;
   }
   return nodes;
 }
