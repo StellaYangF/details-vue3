@@ -1,70 +1,13 @@
-import { NodeTypes } from "./compile"
-
-
-
-export interface ParserContext {
-  readonly originalSource: string
-  source: string
-  line: number
-  column: number
-  offset: number
-}
-
-// ast.ts
-export interface Position {
-  offset: number //from start of file
-  line: number,
-  column: number
-}
-
-export interface SourceLocation {
-  start: Position
-  end: Position
-  source: string
-}
-
-// TODO: RootNode should be returned.
-export function baseParse(content: string) {
-  const context = createParserContext(content)
-  return parseChildren(context)
-}
-
-export interface Node {
-  type: NodeTypes
-  loc: SourceLocation
-}
-
-export interface TextNode extends Node {
-  type: NodeTypes.TEXT
-  content: string
-}
-
-export interface SimpleExpressionNode extends Node {
-  type: NodeTypes.SIMPLE_EXPRESSION
-  content: string
-  isStatic: boolean
-}
-export interface CompoundExpressionNode extends Node {
-  type: NodeTypes.COMPOUND_EXPRESSION
-  children: (
-    | SimpleExpressionNode
-    | CompoundExpressionNode
-    | InterpolationNode
-    | TextNode
-    | string
-    | symbol
-  )[]
-}
-
-export type ExpressionNode = SimpleExpressionNode | CompoundExpressionNode
-
-export interface InterpolationNode extends Node {
-  type: NodeTypes.INTERPOLATION
-  content: ExpressionNode
-}
-
-export type TemplateChildNode =
-  | TextNode
+import {
+  ElementNode,
+  InterpolationNode,
+  NodeTypes,
+  ParserContext,
+  Position,
+  SourceLocation,
+  TemplateChildNode,
+  TextNode
+} from "./ast"
 
 function createParserContext(content: string) {
   return {
@@ -76,6 +19,12 @@ function createParserContext(content: string) {
   }
 }
 
+// TODO: RootNode should be returned.
+export function baseParse(content: string) {
+  const context = createParserContext(content)
+  return parseChildren(context)
+}
+
 function parseChildren(
   context: ParserContext
 ): TemplateChildNode[] {
@@ -85,11 +34,9 @@ function parseChildren(
     const s = context.source
     let node
     if (s.startsWith('{{')) {
-      // TODO: process expression
       node = parseInterpolation(context)
     } else if (s[0] === '<') {
-      // TODO: process element
-      node = {}
+      node = parseElement(context)
     }
     if (!node) {
       // parseText
@@ -103,7 +50,13 @@ function parseChildren(
   return nodes
 }
 
-const isEnd = (context: ParserContext): boolean => !context.source
+const isEnd = (context: ParserContext): boolean => {
+  const source = context.source
+  if (context.source.startsWith('</')) { // denote no children
+    return true
+  }
+  return !source
+}
 
 function parseText(context): TextNode {
   // Hello {{name}}</div> | Hello </div>{{name}}
@@ -227,5 +180,53 @@ function parseInterpolation(
       loc: getSelection(context, innerStart, innerEnd)
     },
     loc: getSelection(context, start)
+  }
+}
+
+function parseElement(context: ParserContext): ElementNode | undefined {
+  const ele = parseTag(context, TagType.Start)
+  const children = parseChildren(context)
+
+  if (context.source.startsWith('</')) {
+    parseTag(context, TagType.End)
+  }
+  ele.loc = getSelection(context, ele.loc.start)
+  ele.children = children
+  return ele
+}
+
+const enum TagType {
+  Start,
+  End
+}
+
+function parseTag(context: ParserContext, type: TagType.Start): ElementNode
+function parseTag(context: ParserContext, type: TagType.End): void
+function parseTag(context: ParserContext, type: TagType): ElementNode | undefined {
+  const start = getCursor(context)
+  // <div id=""></div>
+  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source)
+  const tag = match[1] // <div
+  advanceBy(context, match[0].length)
+  advanceSpaces(context)
+  const isSelfClosing = context.source.startsWith('/>') //<slot />
+  advanceBy(context, isSelfClosing ? 2 : 1)
+
+  if (type === TagType.End) {
+    return
+  }
+
+  return {
+    type: NodeTypes.ELEMENT,
+    tag,
+    isSelfClosing,
+    loc: getSelection(context, start)
+  }
+}
+
+function advanceSpaces(context: ParserContext): void {
+  const match = /^[\t\r\n]+/.exec(context.source) // null
+  if (match) {
+    advanceBy(context, match[0].length)
   }
 }

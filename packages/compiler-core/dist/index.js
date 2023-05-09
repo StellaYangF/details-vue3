@@ -3,10 +3,6 @@ function generate(ast) {
 }
 
 // packages/compiler-core/src/parse.ts
-function baseParse(content) {
-  const context = createParserContext(content);
-  return parseChildren(context);
-}
 function createParserContext(content) {
   return {
     line: 1,
@@ -16,6 +12,10 @@ function createParserContext(content) {
     originalSource: content
   };
 }
+function baseParse(content) {
+  const context = createParserContext(content);
+  return parseChildren(context);
+}
 function parseChildren(context) {
   const nodes = [];
   while (!isEnd(context)) {
@@ -24,7 +24,7 @@ function parseChildren(context) {
     if (s.startsWith("{{")) {
       node = parseInterpolation(context);
     } else if (s[0] === "<") {
-      node = {};
+      node = parseElement(context);
     }
     if (!node) {
       node = parseText(context);
@@ -34,7 +34,13 @@ function parseChildren(context) {
   }
   return nodes;
 }
-var isEnd = (context) => !context.source;
+var isEnd = (context) => {
+  const source = context.source;
+  if (context.source.startsWith("</")) {
+    return true;
+  }
+  return !source;
+};
 function parseText(context) {
   const endTokens = ["<", "{"];
   let endIndex = context.source.length;
@@ -119,6 +125,40 @@ function parseInterpolation(context) {
     },
     loc: getSelection(context, start)
   };
+}
+function parseElement(context) {
+  const ele = parseTag(context, 0 /* Start */);
+  const children = parseChildren(context);
+  if (context.source.startsWith("</")) {
+    parseTag(context, 1 /* End */);
+  }
+  ele.loc = getSelection(context, ele.loc.start);
+  ele.children = children;
+  return ele;
+}
+function parseTag(context, type) {
+  const start = getCursor(context);
+  const match = /^<\/?([a-z][^\t\r\n\f />]*)/i.exec(context.source);
+  const tag = match[1];
+  advanceBy(context, match[0].length);
+  advanceSpaces(context);
+  const isSelfClosing = context.source.startsWith("/>");
+  advanceBy(context, isSelfClosing ? 2 : 1);
+  if (type === 1 /* End */) {
+    return;
+  }
+  return {
+    type: 1 /* ELEMENT */,
+    tag,
+    isSelfClosing,
+    loc: getSelection(context, start)
+  };
+}
+function advanceSpaces(context) {
+  const match = /^[\t\r\n]+/.exec(context.source);
+  if (match) {
+    advanceBy(context, match[0].length);
+  }
 }
 
 // packages/compiler-core/src/transform.ts
