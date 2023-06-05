@@ -4,6 +4,7 @@ import {
   NodeTypes,
   ParserContext,
   Position,
+  RootNode,
   SourceLocation,
   TemplateChildNode,
   TextNode
@@ -20,7 +21,7 @@ function createParserContext(content: string) {
 }
 
 // TODO: RootNode should be returned.
-export function baseParse(content: string) {
+export function baseParse(content: string): RootNode {
   const context = createParserContext(content)
   const start = getCursor(context)
   return createRoot(
@@ -29,11 +30,12 @@ export function baseParse(content: string) {
   )
 }
 
-function createRoot(children, loc) {
+function createRoot(children, loc): RootNode {
   return {
     type: NodeTypes.ROOT,
     children,
-    loc
+    loc,
+    helpers: new Set()
   }
 }
 

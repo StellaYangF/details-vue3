@@ -24,7 +24,8 @@ function createRoot(children, loc) {
   return {
     type: 0 /* ROOT */,
     children,
-    loc
+    loc,
+    helpers: /* @__PURE__ */ new Set()
   };
 }
 function parseChildren(context) {
@@ -171,14 +172,144 @@ function advanceSpaces(context) {
   }
 }
 
+// packages/shared/src/generals.ts
+var isArray = Array.isArray;
+var isString = (val) => typeof val === "string";
+
+// packages/compiler-core/src/runtimeHelpers.ts
+var TO_DISPLAY_STRING = Symbol(``);
+
 // packages/compiler-core/src/transform.ts
 function transform(root) {
+  const context = createTransformContext(root);
+  traverseNode(root, context);
+}
+function createTransformContext(root) {
+  const context = {
+    root,
+    currentNode: root,
+    parent: null,
+    nodeTransforms: [
+      transformElement,
+      transformText,
+      transformExpression
+    ],
+    helpers: /* @__PURE__ */ new Map(),
+    // record transforms call nums
+    helper(name) {
+      const count = context.helpers.get(name) || 0;
+      context.helpers.set(name, count + 1);
+      return name;
+    },
+    removeHelper(name) {
+      const count = context.helpers.get(name);
+      if (count) {
+        const currentCount = count - 1;
+        if (!currentCount) {
+          context.helpers.delete(name);
+        } else {
+          context.helpers.set(name, currentCount);
+        }
+      }
+    },
+    childIndex: 0,
+    onNodeRemoved: () => {
+    },
+    removeNode(node) {
+      const list = context.parent.children;
+      const removalIndex = node ? list.indexOf(node) : context.currentNode ? context.childIndex : -1;
+      if (!node || node === context.currentNode) {
+        context.currentNode = null;
+        context.onNodeRemoved();
+      } else {
+        if (context.childIndex > removalIndex) {
+          context.childIndex--;
+          context.onNodeRemoved();
+        }
+      }
+      context.parent.children.splice(removalIndex, 1);
+    }
+  };
+  return context;
+}
+function transformElement(node) {
+  if (node.type === 1 /* ELEMENT */) {
+    return function postTransformElement() {
+      console.log("transform element", node);
+    };
+  }
+}
+function transformText(node) {
+  if (node.type === 1 /* ELEMENT */ || node.type === 0 /* ROOT */) {
+    return () => {
+      let hasText = false;
+      const children = node.children;
+      const currentContainer = void 0;
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+      }
+    };
+  }
+}
+function transformExpression(node) {
+  if (node.type === 5 /* INTERPOLATION */) {
+    node.content.content = `_ctx.${node.content.content}`;
+  }
+}
+function traverseNode(node, context) {
+  context.currentNode = node;
+  const { nodeTransforms } = context;
+  const exitFns = [];
+  for (let i2 = 0; i2 < nodeTransforms.length; i2++) {
+    const onExit = nodeTransforms[i2](node, context);
+    if (onExit) {
+      if (isArray(onExit)) {
+        exitFns.push(...onExit);
+      } else {
+        exitFns.push(onExit);
+      }
+    }
+    if (!context.currentNode) {
+      return;
+    } else {
+      node = context.currentNode;
+    }
+  }
+  switch (node.type) {
+    case 5 /* INTERPOLATION */:
+      context.helper(TO_DISPLAY_STRING);
+      break;
+    case 1 /* ELEMENT */:
+    case 0 /* ROOT */:
+      traverseChildren(node, context);
+      break;
+  }
+  context.currentNode = node;
+  let i = exitFns.length;
+  while (i--) {
+    exitFns[i]();
+  }
+}
+function traverseChildren(parent, context) {
+  var _a;
+  let i = 0;
+  const nodeRemoved = () => {
+    i--;
+  };
+  for (; i < ((_a = parent.children) == null ? void 0 : _a.length); i++) {
+    const child = parent.children[i];
+    if (isString(child))
+      continue;
+    context.parent = parent;
+    context.childIndex = i;
+    context.onNodeRemoved = nodeRemoved;
+    traverseNode(child, context);
+  }
 }
 
 // packages/compiler-core/src/compile.ts
 function baseCompile(template) {
   const ast = baseParse(template);
-  console.log(ast);
   transform(ast);
   return generate(ast);
 }

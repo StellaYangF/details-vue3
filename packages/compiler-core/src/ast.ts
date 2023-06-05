@@ -40,6 +40,8 @@ export interface Position {
   column: number
 }
 
+export type ParentNode = RootNode | ElementNode
+
 export interface SourceLocation {
   start: Position
   end: Position
@@ -93,7 +95,7 @@ export interface AttributeNode extends Node {
   value: TextNode | undefined
 }
 export interface PlainElementNode extends BaseElementNode {
-  tagType?: ElementTypes
+  tagType?: ElementTypes.ELEMENT
 }
 export interface InterpolationNode extends Node {
   type: NodeTypes.INTERPOLATION
@@ -101,4 +103,13 @@ export interface InterpolationNode extends Node {
 }
 
 export type TemplateChildNode =
+  | ElementNode
+  | InterpolationNode
+  | CompoundExpressionNode
   | TextNode
+
+export interface RootNode extends Node {
+  type: NodeTypes.ROOT
+  children: TemplateChildNode[]
+  helpers: Set<symbol>
+}
