@@ -14,10 +14,20 @@ function createParserContext(content) {
 }
 function baseParse(content) {
   const context = createParserContext(content);
-  return parseChildren(context);
+  const start = getCursor(context);
+  return createRoot(
+    parseChildren(context),
+    getSelection(context, start)
+  );
+}
+function createRoot(children, loc) {
+  return {
+    type: 0 /* ROOT */,
+    children,
+    loc
+  };
 }
 function parseChildren(context) {
-  debugger;
   const nodes = [];
   while (!isEnd(context)) {
     const s = context.source;

@@ -22,13 +22,24 @@ function createParserContext(content: string) {
 // TODO: RootNode should be returned.
 export function baseParse(content: string) {
   const context = createParserContext(content)
-  return parseChildren(context)
+  const start = getCursor(context)
+  return createRoot(
+    parseChildren(context),
+    getSelection(context, start)
+  )
+}
+
+function createRoot(children, loc) {
+  return {
+    type: NodeTypes.ROOT,
+    children,
+    loc
+  }
 }
 
 function parseChildren(
   context: ParserContext
 ): TemplateChildNode[] {
-  debugger
   const nodes: TemplateChildNode[] = []
 
   while (!isEnd(context)) {
