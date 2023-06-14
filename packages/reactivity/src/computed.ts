@@ -4,7 +4,8 @@ import { ReactiveEffect, activeEffect, trackEffects, triggerEffects } from "./ef
 class ComputedRefImpl {
   public _dirty = true
   public _value
-  public dep
+  public dep // effect.run 取值时，会走到 proxyData 的取值器，收集依赖
+  // target: { firstName: [computedEffect], lastName: [computedEffect] }
   public effect
   constructor(getter, public setter) {
     this.effect = new ReactiveEffect(getter, () => {
@@ -17,6 +18,8 @@ class ComputedRefImpl {
 
   get value() {
     // 取值收集依赖：在 effect 中使用时，才会收集依赖，单独存放在实例的dep中
+    // 此时 activeEffect 为普通 effect（如：组件effect）
+    //  dep[compEffect]
     if (activeEffect) {
       trackEffects(this.dep || (this.dep = new Set()))
     }
