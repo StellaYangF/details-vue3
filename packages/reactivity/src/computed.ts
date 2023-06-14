@@ -16,7 +16,7 @@ class ComputedRefImpl {
   }
 
   get value() {
-    // 取值收集依赖：在 effect 中使用时，单独做依赖收集
+    // 取值收集依赖：在 effect 中使用时，才会收集依赖，单独存放在实例的dep中
     if (activeEffect) {
       trackEffects(this.dep || (this.dep = new Set()))
     }
