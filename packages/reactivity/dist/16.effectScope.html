@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>effectScope</title>
+</head>
+<body>
+  <div id="app">
+    <h1 id="h1"></h1>
+    <h2 id="h2"></h2>
+  </div>
+  <script type="module">
+    import { reactive, effect, effectScope } from './index.js'
+
+    const data = reactive({ msg: 'hello world' })
+    const scope = effectScope()
+    scope.run(() => {
+      effect(() => {
+        h1.innerHTML = data.msg
+      })
+      const scope1 = effectScope()
+      scope1.run(() => {
+        effect(() => h2.innerHTML = data.msg)
+      })
+    })
+
+    scope.stop()
+
+    setTimeout(() => {
+      data.msg = 'world'
+    }, 1000);
+    
+  </script>
+</body>
+</html>

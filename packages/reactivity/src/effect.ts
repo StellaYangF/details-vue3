@@ -7,7 +7,11 @@ export class ReactiveEffect {
   public active = true
   // 记录 effect 中使用的属性
   public deps = []
-  constructor(private fn, public scheduler?) { }
+  constructor(private fn, public scheduler?) {
+    if (activeEffectScope && activeEffectScope.active) {
+      activeEffectScope.effects.push(this)
+    }
+  }
 
   run() {
     try {
@@ -127,4 +131,47 @@ function cleanupEffect(effect) {
     deps[i].delete(effect)
   }
   effect.deps.length = 0
+}
+
+// effectScope 是用于提供作用域的，函数调用后返回的对象包含 run 和 stop 方法
+// run 方法，接收需要订阅观察的 effect,
+// stop 方法，则是触发发布所订阅的 effect.stop，停止响应数据的依赖收集
+// 内部逻辑还是发布订阅的模式，
+// 在此作用域下
+let activeEffectScope
+class EffectScope {
+  public active = true
+  public effects = []
+  public scopes = []
+  public parent
+
+  run(fn) {
+    if (this.active) {
+      try {
+        this.parent = activeEffectScope
+        activeEffectScope = this
+        return fn()
+      } finally {
+        activeEffectScope = this.parent
+        this.parent = null
+      }
+    }
+  }
+
+  stop() {
+    if (this.active) {
+      this.active = false
+      this.effects.forEach(effect => effect.stop())
+      this.scopes.forEach(scope => scope.stop())
+    }
+  }
+}
+
+export function effectScope(detached = false): EffectScope {
+  const scope = new EffectScope()
+  if (!detached && activeEffectScope) {
+    activeEffectScope.scopes.push(scope)
+  }
+  console.log(activeEffectScope)
+  return scope
 }
