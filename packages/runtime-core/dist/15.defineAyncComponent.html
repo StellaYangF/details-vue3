@@ -9,19 +9,38 @@
 <body>
   <div id="app"></div>
   <script type="module">
-    // import { reactive, effect } from "../../../../node_modules/@vue/reactivity/dist/reactivity.esm-browser.js"
+    // import { reactive, effect, render, h } from "../../../../node_modules/@vue/reactivity/dist/reactivity.esm-browser.js"
     import { reactive, effect, render, defineAsyncComponent, h } from './index.js'
 
-   const A = defineAsyncComponent(() => new Promise(resolve => {
-    setTimeout(() => resolve({
+    const loadedComponent = {
       render() {
-        return h('div', 'hello')
-      }
-    }), 1000)
-   }))
-   console.log(A)
+            return h('div', 'hello')
+          }
+    }
 
-    render(h(A), app)
+  //  const A = defineAsyncComponent(() => new Promise(resolve => resolve(loadedComponent)))
+
+  const A = defineAsyncComponent({
+    loader: () => new Promise((resolve, reject) => {
+      setTimeout(() => resolve(loadedComponent), 3000)
+      // setTimeout(() => reject(loadedComponent), 3000)
+    }),
+    timeout: 2000,
+    errorComponent: h('div', 'something wrong'),
+    delay: 1000,
+    loadingComponent: h('div', 'loading~~~'),
+    onError: (err, retry, fail, attempts)=> {
+      console.log(err, 'retry')
+      console.log(attempts)
+      if (attempts === 5){
+        fail
+      } else {
+        retry()
+      }
+    }
+  })
+
+  render(h(A), app)
 
   </script>
 </body>

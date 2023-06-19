@@ -1,29 +1,69 @@
 import { ref } from "@vue/reactivity"
 import { Fragment, h } from "./vnode"
-import { isFunction, isObject } from "@vue/shared"
-
-// 异步组件
-// 1. 先渲染一个空，再渲染组件的
+import { isFunction } from "@vue/shared"
 
 export function defineAsyncComponent(options) {
   if (isFunction(options)) {
     options.loader = options
   }
+  let defaultComp = h(Fragment, [])
 
   return {
     setup() {
-      const { loader } = options
-      const flag = ref(false)
+      const {
+        loader,
+        timeout,
+        delay,
+        loadingComponent = defaultComp,
+        errorComponent = defaultComp,
+        onError
+      } = options
+      const loading = ref(false)
+      const loaded = ref(false)
+      const error = ref(false)
       let component
+      let attempts = 1
+
+      if (delay) {
+        setTimeout(() => loading.value = true, delay)
+      }
+
+      if (timeout) {
+        setTimeout(() => {
+          onLoadError('timeout')
+        }, timeout)
+      }
+
+      const onLoadError = err => {
+        error.value = true
+        new Promise((resolve, reject) => {
+          if (onError && !loaded.value) {
+            const retry = () => resolve(load())
+            const fail = () => reject()
+            onError(err, retry, fail, attempts++)
+          }
+        })
+      }
 
       // 这里不用 async await 写法，vue 内部会加入 suspense流程
-      loader().then(comp => {
-        component = comp
-        flag.value = true
-      })
-      return () => flag.value
-        ? h(component)
-        : h(Fragment, [])
+      function load() {
+        loader().then(comp => {
+          component = comp
+          loaded.value = true
+        }).catch(onLoadError)
+      }
+      load()
+
+      return () => {
+        if (loaded.value) {
+          return h(component)
+        } else if (error.value) {
+          return errorComponent
+        } else if (loading.value) {
+          return loadingComponent
+        }
+        return defaultComp
+      }
     }
   }
 }
