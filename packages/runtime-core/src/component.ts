@@ -55,8 +55,10 @@ export function setupComponent(instance) {
         const handler = instance.vnode.props[eventName]
 
         handler && handler(...args)
-      }
+      },
     }
+
+    // setup 函数中，便于生命周期钩子函数，获取当前实例，拿到对应的属性、数据、slots等信息
     setCurrentInstance(instance)
     const setupResult = setup(instance.props, setupContext)
     unsetCurrentInstance(null)
@@ -70,10 +72,12 @@ export function setupComponent(instance) {
 
   instance.proxy = new Proxy(instance, PublicInstanceProxyHandlers)
   const data = type.data
+
   if (data) {
     if (!isFunction(data)) return console.warn(`The data option must be a function`)
     instance.data = reactive(data.call(instance.proxy))
   }
+  // setup 中返回的是数据时，则取用户传入的 render 函数
   if (!instance.render) {
     instance.render = type.render
   }

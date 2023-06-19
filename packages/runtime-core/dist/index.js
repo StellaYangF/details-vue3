@@ -225,6 +225,9 @@ var ReactiveEffect = class {
     this.active = true;
     // 记录 effect 中使用的属性
     this.deps = [];
+    if (activeEffectScope && activeEffectScope.active) {
+      activeEffectScope.effects.push(this);
+    }
   }
   run() {
     try {
@@ -309,6 +312,41 @@ function cleanupEffect(effect2) {
     deps[i].delete(effect2);
   }
   effect2.deps.length = 0;
+}
+var activeEffectScope;
+var EffectScope = class {
+  constructor() {
+    this.active = true;
+    this.effects = [];
+    this.scopes = [];
+  }
+  run(fn) {
+    if (this.active) {
+      try {
+        this.parent = activeEffectScope;
+        activeEffectScope = this;
+        return fn();
+      } finally {
+        activeEffectScope = this.parent;
+        this.parent = null;
+      }
+    }
+  }
+  stop() {
+    if (this.active) {
+      this.active = false;
+      this.effects.forEach((effect2) => effect2.stop());
+      this.scopes.forEach((scope) => scope.stop());
+    }
+  }
+};
+function effectScope(detached = false) {
+  const scope = new EffectScope();
+  if (!detached && activeEffectScope) {
+    activeEffectScope.scopes.push(scope);
+  }
+  console.log(activeEffectScope);
+  return scope;
 }
 
 // packages/reactivity/src/baseHandlers.ts
@@ -1108,6 +1146,25 @@ var onMounted = createHook("m" /* MOUNTED */);
 var onBeforeUpdate = createHook("bu" /* BEFORE_UPDATE */);
 var onUpdated = createHook("u" /* UPDATED */);
 
+// packages/runtime-core/src/apiDefineAsyncComponent.ts
+function defineAsyncComponent(options) {
+  if (isFunction(options)) {
+    options.loader = options;
+  }
+  return {
+    setup() {
+      const { loader } = options;
+      const flag = ref(false);
+      let component;
+      loader().then((comp) => {
+        component = comp;
+        flag.value = true;
+      });
+      return () => flag.value ? h(component) : h(Fragment, []);
+    }
+  };
+}
+
 // packages/runtime-core/src/helpers/renderList.ts
 function renderList(source, renderItem) {
   let ret = [];
@@ -1131,8 +1188,10 @@ export {
   createRenderer,
   createTextVNode,
   createVNode,
+  defineAsyncComponent,
   doWatch,
   effect,
+  effectScope,
   h,
   isReactive,
   isVNode,
