@@ -1,16 +1,41 @@
 # Vue3 Handwriting
 
-## Init 初始化
+## Aims
 
-包管理工具为 `pnpm workspace`, 用以实现  `monorepo` (pnpm是快速、节省磁盘空间的包管理器。主要采用符号链接的方式管理模块)
+This repository aims to record the learning details of Vue3, personally. So there are unavoidably some misunderstanding or errors to the source code. If you have any questions, feel free to tell me, which will be warmly appreciated.
 
-```cmd
-全局安装 pnpm
-npm install pnpm -g
+## Packages
 
-初始化项目
-pnpm init -y
-```
+Since the source code is split into several packages. Here are the relative documents of the main packages. See from the following:
+
+- reactive
+- runtime-core
+- runtime-dom
+- compiler-core
+- compiler-dom
+
+## Plugins
+These are also called the ecosystems to Vue3.x.
+
+- pinia
+- vue-router
+
+## Preferences
+
+Here are listed of the above packages as well as some usage. To make it more clear, here I scatter them into individual docs.
+
+- Init
+- Dependencies
+- reactive
+- watch
+- computed
+- ref
+- runtime
+- diff
+- componentRender
+- Text & Fragment
+- Text
+- 
 
 ## Add Dependencies
 
@@ -52,16 +77,6 @@ pnpm tsc --init
   }
 }
 ```
-
-## Structure 工作目录
-
-- packages
-  - reactivity 
-    - src
-    - package.json （`pnpm init `生成）
-  - shared
-    - src
-- sc
 
 ## Reactive Package
 
