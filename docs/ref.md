@@ -8,16 +8,16 @@
 5. 区分 ref 和 shallowRef，单层代理
 
 ### 代码实现
-![ref](./assets/ref.png)
+![ref](../assets/ref.png)
 
 ### toRef(s)
 
 代理对象结构之后，会丢失响应式更新操作。可通过 toRef(s) 实现
 
-![toRef](./assets/toRef.png)
+![toRef](../assets/toRef.png)
 
 ### proxyRefs
 
 自动去掉 ref.value，template 模板帮忙做了操作
-![proxyRefs](./assets/proxyRefs.png)
+![proxyRefs](../assets/proxyRefs.png)
 

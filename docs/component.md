@@ -550,7 +550,7 @@ export const PublicInstanceProxyHandlers = {
 9. updateComponent
 10. updateProps -> instance.props.key=newVal -> updateComponentFn
 
-![processComponent](./assets/processComponent.png)
+![processComponent](../assets/processComponent.png)
 
 #### 优化 updateComponent 
 

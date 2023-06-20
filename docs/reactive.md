@@ -69,25 +69,25 @@ console.log(p.total)
   - `effect.ts` 暴露出变量 `activeEffect`
   - `get` 取值操作时，通过变量 `activeEffect` 就建立起连接 `{target -> key -> dep}`
   - **每执行完一个 effect(fn)，就要清空当前的 activeEffect；而执行前，把 reactiveEffect 实例复制给 activeEffect**，这样才能保证fn执行时，内部用到的响应式数据，可以建立连接
-  ![activeEffect](./assets/activeEffect.jpg)
+  ![activeEffect](../assets/activeEffect.jpg)
 
 2. 每调用一次 effect，就会重新 new 一个 `ReactiveEffect`
   - 嵌套 effect 需要考虑在内。
-  ![nestedEffect](./assets/nestedEffect.jpg)
+  ![nestedEffect](../assets/nestedEffect.jpg)
   - 解决方案 2.x 基于栈来处理（进出栈），需要额外维护。
   - vue3 则运用树结构，标记关系即可。
-  ![nestedEffectParent](./assets/nestedEffectParent.jpg)
+  ![nestedEffectParent](../assets/nestedEffectParent.jpg)
 
 ### 依赖收集
 默认执行 effect 时会对属性，进行依赖收集
 
 - effect 函数内取值，才会 
 - `activeEffect.deps` 将属性和对应的 `effect` 维护成映射关系，后续属性变化可以触发对应的 `effect` 函数重新 `run`
-![track](./assets/track.jpg)
+![track](../assets/track.jpg)
 
 ### 触发更新
 取值时已收集过依赖，更新操作即触发 effect 重新执行
-![trigger](./assets/trigger.jpg)
+![trigger](../assets/trigger.jpg)
 
 ### 清除 effect 产生的副作用
 
