@@ -7,7 +7,7 @@ watch 内部就是 new 一个 `ReactiveEffect`，传入 fn 和 `scheduler`，fn 
 
 ### watchEffect
 watchEffect 本质就是一个 effect，默认是异步执行；
-watch 是监控一个数据的变化，数据更新执行 effect，传入的 cb，启用了 ReactiveEffect(fn, scheduler) 中的 scheduler 调度执行的函数
+watch 是监控一个数据的变化，数据更新执行 effect
 
 ```js
 // effect + scheduler 取值操作，收集依赖，并将前后取值返回
@@ -75,8 +75,8 @@ export function doWatch(source, cb, options) {
   2. 清理定时器
   3. 屏蔽数据（类似防抖操作，最新请求发出时，丢弃上次请求返回值）
 **代码解决**
-  1. vue2 中需要自行解决
-  2. vue3 提供 onCleanup 回调函数
+  1. `vue2` 中需要自行解决
+  2. `vue3` 提供 `onCleanup` 回调函数
   ```js
   // mock backend response
     let time = 3000
@@ -140,7 +140,3 @@ const scheduler = () => {
   }
 }
 ```
-
-
-### 手写
-![watch](../assets/watch.png)
