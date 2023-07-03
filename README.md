@@ -36,6 +36,6 @@ Here are listed of the above packages as well as some usage. To make it more cle
 - [asyncComponent](https://github.com/StellaYangF/vue3/blob/main/docs/asyncComponent.md)
 - [compiler](https://github.com/StellaYangF/vue3/blob/main/docs/compiler.md)
 
-
+- [vue-router](https://github.com/StellaYangF/vue3/blob/main/docs/router.md)
 ## Learn More
 - [operator](https://github.com/StellaYangF/vue3/blob/main/docs/operator.md)

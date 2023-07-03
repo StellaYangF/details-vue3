@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/index.ts"],
+  "sourcesContent": ["export function createWebHistory() {\n\n}"],
+  "mappings": ";AAAO,SAAS,mBAAmB;AAEnC;",
+  "names": []
+}

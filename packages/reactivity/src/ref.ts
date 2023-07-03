@@ -45,7 +45,7 @@ export function shallowRef(value) {
   return createRef(value, true)
 }
 
-class ObjectReeImpl {
+class ObjectRefImpl {
   public __v_isRef = true
 
   constructor(public _object, public _key) { }
@@ -60,7 +60,7 @@ class ObjectReeImpl {
 }
 
 export function toRef(object, key) {
-  return new ObjectReeImpl(object, key)
+  return new ObjectRefImpl(object, key)
 }
 
 export function toRefs(object) {

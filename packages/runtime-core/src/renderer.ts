@@ -538,7 +538,7 @@ function getSequence(arr: number[]): number[] {
       // 1. 当前元素>取出的最大元素，追加入result，并记录下标
       if (arrI > arr[j]) {
         p[i] = j
-        result.push()
+        result.push(i)
         continue
       }
 
