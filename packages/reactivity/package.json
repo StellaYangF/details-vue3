@@ -3,10 +3,24 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "module": "dist/reactivity.esm-bundle.js",
+  "unpkg": "dist/reactivity.global.js",
+  "buildOptions": {
+    "name": "VueReactivity",
+    "formats": [
+      "esm-bundler",
+      "esm-browser",
+      "cjs",
+      "global"
+    ]
   },
-  "keywords": [],
+  "keywords": [
+    "reactivity",
+    "learning"
+  ],
+  "dependencies": {
+    "@vue/shared": "workspace:*"
+  },
   "author": "",
-  "license": "ISC"
+  "license": "MIT"
 }
